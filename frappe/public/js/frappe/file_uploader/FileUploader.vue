@@ -30,7 +30,7 @@
 						{{ __('uploaded file') }}
 					</a>
 					{{ __('or attach a') }}
-					<a class="text-primary bold" href
+					<a href="#" class="text-primary bold"
 						@click.stop.prevent="show_web_link = true"
 					>
 						{{ __('web link') }}
