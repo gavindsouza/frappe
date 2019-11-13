@@ -57,7 +57,7 @@ faker
 stripe
 coverage
 urllib3
-GitPython==2.1.11
+GitPython==3.0.4
 psycopg2==2.7.5
 psycopg2-binary==2.7.5
 sqlparse==0.2.4
