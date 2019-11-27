@@ -8,6 +8,9 @@ addons:
   mariadb: 10.3
   postgresql: 9.5
 
+services:
+  - redis-server
+
 git:
   depth: 1
 
@@ -81,7 +84,6 @@ install:
   - if [ $TYPE == "ui" ]; then bench setup requirements --node; fi
 
   - bench start &
-  - bench --site test_site reinstall --yes
   - bench build --app frappe
 
 after_script:
