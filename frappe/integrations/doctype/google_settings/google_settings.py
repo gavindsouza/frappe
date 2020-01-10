@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 from frappe.model.document import Document
 
 class GoogleSettings(Document):
-	pass
+    pass
 
 def get_auth_url():
-	return "https://www.googleapis.com/oauth2/v4/token"
+    return "https://www.googleapis.com/oauth2/v4/token"

@@ -6,4 +6,4 @@ from __future__ import unicode_literals
 import unittest
 
 class TestPrintSettings(unittest.TestCase):
-	pass
+    pass

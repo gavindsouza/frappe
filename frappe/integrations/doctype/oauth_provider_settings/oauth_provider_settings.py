@@ -8,12 +8,12 @@ from frappe.model.document import Document
 from frappe import _
 
 class OAuthProviderSettings(Document):
-	pass
+    pass
 
 def get_oauth_settings():
-	"""Returns oauth settings"""
-	out = frappe._dict({
-		"skip_authorization" : frappe.db.get_value("OAuth Provider Settings", None, "skip_authorization")
-	})
+    """Returns oauth settings"""
+    out = frappe._dict({
+        "skip_authorization" : frappe.db.get_value("OAuth Provider Settings", None, "skip_authorization")
+    })
 
-	return out
+    return out

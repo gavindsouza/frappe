@@ -7,4 +7,4 @@ import frappe
 session = frappe.session
 
 class ChatRoomUser(Document):
-	pass
+    pass

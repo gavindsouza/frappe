@@ -6,12 +6,12 @@ import frappe
 from frappe.model.document import Document
 
 class CustomScript(Document):
-	def autoname(self):
-		self.name = self.dt + "-Client"
+    def autoname(self):
+        self.name = self.dt + "-Client"
 
-	def on_update(self):
-		frappe.clear_cache(doctype=self.dt)
+    def on_update(self):
+        frappe.clear_cache(doctype=self.dt)
 
-	def on_trash(self):
-		frappe.clear_cache(doctype=self.dt)
+    def on_trash(self):
+        frappe.clear_cache(doctype=self.dt)
 

@@ -8,23 +8,23 @@ from frappe.model.document import Document
 from frappe import _
 
 class DeletedDocument(Document):
-	pass
+    pass
 
 @frappe.whitelist()
 def restore(name):
-	deleted = frappe.get_doc('Deleted Document', name)
-	doc = frappe.get_doc(json.loads(deleted.data))
-	try:
-		doc.insert()
-	except frappe.DocstatusTransitionError:
-		frappe.msgprint(_("Cancelled Document restored as Draft"))
-		doc.docstatus = 0
-		doc.insert()
+    deleted = frappe.get_doc('Deleted Document', name)
+    doc = frappe.get_doc(json.loads(deleted.data))
+    try:
+        doc.insert()
+    except frappe.DocstatusTransitionError:
+        frappe.msgprint(_("Cancelled Document restored as Draft"))
+        doc.docstatus = 0
+        doc.insert()
 
-	doc.add_comment('Edit', _('restored {0} as {1}').format(deleted.deleted_name, doc.name))
+    doc.add_comment('Edit', _('restored {0} as {1}').format(deleted.deleted_name, doc.name))
 
-	deleted.new_name = doc.name
-	deleted.restored = 1
-	deleted.db_update()
+    deleted.new_name = doc.name
+    deleted.restored = 1
+    deleted.db_update()
 
-	frappe.msgprint(_('Document Restored'))
+    frappe.msgprint(_('Document Restored'))

@@ -6,4 +6,4 @@ from __future__ import unicode_literals
 import unittest
 
 class TestStripeSettings(unittest.TestCase):
-	pass
+    pass

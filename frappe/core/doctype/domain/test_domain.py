@@ -7,4 +7,4 @@ import frappe
 import unittest
 
 class TestDomain(unittest.TestCase):
-	pass
+    pass

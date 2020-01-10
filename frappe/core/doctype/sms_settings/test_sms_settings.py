@@ -7,4 +7,4 @@ import frappe
 import unittest
 
 class TestSMSSettings(unittest.TestCase):
-	pass
+    pass

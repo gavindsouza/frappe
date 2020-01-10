@@ -7,4 +7,4 @@ import frappe
 import unittest
 
 class TestEmailRule(unittest.TestCase):
-	pass
+    pass

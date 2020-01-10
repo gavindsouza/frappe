@@ -7,4 +7,4 @@ import frappe
 import unittest
 
 class TestSystemSettings(unittest.TestCase):
-	pass
+    pass

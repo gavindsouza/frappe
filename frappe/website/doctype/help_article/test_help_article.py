@@ -9,4 +9,4 @@ import unittest
 # test_records = frappe.get_test_records('Help Article')
 
 class TestHelpArticle(unittest.TestCase):
-	pass
+    pass

@@ -4,4 +4,4 @@ import frappe
 from frappe.translate import rename_language
 
 def execute():
-	rename_language("Melayu", "မြန်မာ")
+    rename_language("Melayu", "မြန်မာ")

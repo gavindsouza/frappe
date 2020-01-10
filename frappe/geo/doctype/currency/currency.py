@@ -8,6 +8,6 @@ from frappe import throw, _
 from frappe.model.document import Document
 
 class Currency(Document):
-	def validate(self):
-		if not frappe.flags.in_install_app:
-			frappe.clear_cache()
+    def validate(self):
+        if not frappe.flags.in_install_app:
+            frappe.clear_cache()

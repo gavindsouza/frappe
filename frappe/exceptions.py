@@ -9,56 +9,56 @@ from werkzeug.exceptions import NotFound
 
 
 if sys.version_info.major == 2:
-	class FileNotFoundError(Exception): pass
+    class FileNotFoundError(Exception): pass
 else:
-	from builtins import FileNotFoundError
+    from builtins import FileNotFoundError
 
 class ValidationError(Exception):
-	http_status_code = 417
+    http_status_code = 417
 
 class AuthenticationError(Exception):
-	http_status_code = 401
+    http_status_code = 401
 
 class SessionExpired(Exception):
-	http_status_code = 401
+    http_status_code = 401
 
 class PermissionError(Exception):
-	http_status_code = 403
+    http_status_code = 403
 
 class DoesNotExistError(ValidationError):
-	http_status_code = 404
+    http_status_code = 404
 
 class NameError(Exception):
-	http_status_code = 409
+    http_status_code = 409
 
 class OutgoingEmailError(Exception):
-	http_status_code = 501
+    http_status_code = 501
 
 class SessionStopped(Exception):
-	http_status_code = 503
+    http_status_code = 503
 
 class UnsupportedMediaType(Exception):
-	http_status_code = 415
+    http_status_code = 415
 
 class RequestToken(Exception):
-	http_status_code = 200
+    http_status_code = 200
 
 class Redirect(Exception):
-	http_status_code = 301
+    http_status_code = 301
 
 class CSRFTokenError(Exception):
-	http_status_code = 400
+    http_status_code = 400
 
 class ImproperDBConfigurationError(Exception):
-	"""
-	Used when frappe detects that database or tables are not properly
-	configured
-	"""
-	def __init__(self, reason, msg=None):
-		if not msg:
-			msg = "MariaDb is not properly configured"
-		super(ImproperDBConfigurationError, self).__init__(msg)
-		self.reason = reason
+    """
+    Used when frappe detects that database or tables are not properly
+    configured
+    """
+    def __init__(self, reason, msg=None):
+        if not msg:
+            msg = "MariaDb is not properly configured"
+        super(ImproperDBConfigurationError, self).__init__(msg)
+        self.reason = reason
 
 class DuplicateEntryError(NameError):pass
 class DataError(ValidationError): pass

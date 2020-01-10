@@ -10,6 +10,6 @@ from frappe.model.document import Document
 
 class ContactUsSettings(Document):
 
-	def on_update(self):
-		from frappe.website.render import clear_cache
-		clear_cache("contact")
+    def on_update(self):
+        from frappe.website.render import clear_cache
+        clear_cache("contact")

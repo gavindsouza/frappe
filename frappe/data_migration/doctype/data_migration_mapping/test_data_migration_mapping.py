@@ -5,4 +5,4 @@ from __future__ import unicode_literals
 import unittest
 
 class TestDataMigrationMapping(unittest.TestCase):
-	pass
+    pass

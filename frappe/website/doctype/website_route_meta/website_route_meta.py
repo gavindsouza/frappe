@@ -6,6 +6,6 @@ from __future__ import unicode_literals
 from frappe.model.document import Document
 
 class WebsiteRouteMeta(Document):
-	def autoname(self):
-		if self.name and self.name.startswith('/'):
-			self.name = self.name[1:]
+    def autoname(self):
+        if self.name and self.name.startswith('/'):
+            self.name = self.name[1:]

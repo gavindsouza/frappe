@@ -9,4 +9,4 @@ import unittest
 # test_records = frappe.get_test_records('Custom Script')
 
 class TestCustomScript(unittest.TestCase):
-	pass
+    pass

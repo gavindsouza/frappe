@@ -8,4 +8,4 @@ import unittest
 test_records = frappe.get_test_records('Website Theme')
 
 class TestWebsiteTheme(unittest.TestCase):
-	pass
+    pass

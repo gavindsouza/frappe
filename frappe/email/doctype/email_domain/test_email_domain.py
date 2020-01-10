@@ -9,4 +9,4 @@ import unittest
 # test_records = frappe.get_test_records('Domain')
 
 class TestDomain(unittest.TestCase):
-	pass
+    pass

@@ -9,4 +9,4 @@ import frappe
 from frappe.model.document import Document
 
 class PatchLog(Document):
-	pass
+    pass

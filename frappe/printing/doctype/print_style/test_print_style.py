@@ -7,4 +7,4 @@ import frappe
 import unittest
 
 class TestPrintStyle(unittest.TestCase):
-	pass
+    pass

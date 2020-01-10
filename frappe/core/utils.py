@@ -6,64 +6,64 @@ import frappe
 
 
 def get_parent_doc(doc):
-	"""Returns document of `reference_doctype`, `reference_doctype`"""
-	if not hasattr(doc, "parent_doc"):
-		if doc.reference_doctype and doc.reference_name:
-			doc.parent_doc = frappe.get_doc(doc.reference_doctype, doc.reference_name)
-		else:
-			doc.parent_doc = None
-	return doc.parent_doc
+    """Returns document of `reference_doctype`, `reference_doctype`"""
+    if not hasattr(doc, "parent_doc"):
+        if doc.reference_doctype and doc.reference_name:
+            doc.parent_doc = frappe.get_doc(doc.reference_doctype, doc.reference_name)
+        else:
+            doc.parent_doc = None
+    return doc.parent_doc
 
 def set_timeline_doc(doc):
-	"""Set timeline_doctype and timeline_name"""
-	parent_doc = get_parent_doc(doc)
-	if (doc.timeline_doctype and doc.timeline_name) or not parent_doc:
-		return
+    """Set timeline_doctype and timeline_name"""
+    parent_doc = get_parent_doc(doc)
+    if (doc.timeline_doctype and doc.timeline_name) or not parent_doc:
+        return
 
-	timeline_field = parent_doc.meta.timeline_field
-	if not timeline_field:
-		return
+    timeline_field = parent_doc.meta.timeline_field
+    if not timeline_field:
+        return
 
-	doctype = parent_doc.meta.get_link_doctype(timeline_field)
-	name = parent_doc.get(timeline_field)
+    doctype = parent_doc.meta.get_link_doctype(timeline_field)
+    name = parent_doc.get(timeline_field)
 
-	if doctype and name:
-		doc.timeline_doctype = doctype
-		doc.timeline_name = name
+    if doctype and name:
+        doc.timeline_doctype = doctype
+        doc.timeline_name = name
 
-	else:
-		return
+    else:
+        return
 
 def find(list_of_dict, match_function):
-	'''Returns a dict in a list of dicts on matching the conditions
-		provided in match function
+    '''Returns a dict in a list of dicts on matching the conditions
+        provided in match function
 
-	Usage:
-		list_of_dict = [{'name': 'Suraj'}, {'name': 'Aditya'}]
+    Usage:
+        list_of_dict = [{'name': 'Suraj'}, {'name': 'Aditya'}]
 
-		required_dict = find(list_of_dict, lambda d: d['name'] == 'Aditya')
-	'''
+        required_dict = find(list_of_dict, lambda d: d['name'] == 'Aditya')
+    '''
 
-	for entry in list_of_dict:
-		if match_function(entry):
-			return entry
-	return None
+    for entry in list_of_dict:
+        if match_function(entry):
+            return entry
+    return None
 
 def find_all(list_of_dict, match_function):
-	'''Returns all matching dicts in a list of dicts.
-		Uses matching function to filter out the dicts
+    '''Returns all matching dicts in a list of dicts.
+        Uses matching function to filter out the dicts
 
-	Usage:
-		colored_shapes = [
-			{'color': 'red', 'shape': 'square'},
-			{'color': 'red', 'shape': 'circle'},
-			{'color': 'blue', 'shape': 'triangle'}
-		]
+    Usage:
+        colored_shapes = [
+            {'color': 'red', 'shape': 'square'},
+            {'color': 'red', 'shape': 'circle'},
+            {'color': 'blue', 'shape': 'triangle'}
+        ]
 
-		red_shapes = find_all(colored_shapes, lambda d: d['color'] == 'red')
-	'''
-	found = []
-	for entry in list_of_dict:
-		if match_function(entry):
-			found.append(entry)
-	return found
+        red_shapes = find_all(colored_shapes, lambda d: d['color'] == 'red')
+    '''
+    found = []
+    for entry in list_of_dict:
+        if match_function(entry):
+            found.append(entry)
+    return found

@@ -9,4 +9,4 @@ import frappe
 from frappe.model.document import Document
 
 class CompanyHistory(Document):
-	pass
+    pass

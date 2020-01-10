@@ -9,4 +9,4 @@ import unittest
 # test_records = frappe.get_test_records('OAuth Authorization Code')
 
 class TestOAuthAuthorizationCode(unittest.TestCase):
-	pass
+    pass

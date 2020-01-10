@@ -7,4 +7,4 @@ import frappe, json
 from frappe.model.document import Document
 
 class ListFilter(Document):
-	pass
+    pass

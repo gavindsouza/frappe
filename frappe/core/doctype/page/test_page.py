@@ -8,4 +8,4 @@ import unittest
 test_records = frappe.get_test_records('Page')
 
 class TestPage(unittest.TestCase):
-	pass
+    pass
