@@ -53,7 +53,6 @@ $.extend(frappe.model, {
 				doc[meta.title_field] = frappe.route_options.name_field;
 			}
 
-
 			delete frappe.route_options.name_field;
 		}
 
@@ -61,12 +60,13 @@ $.extend(frappe.model, {
 		if(frappe.route_options && !doc.parent) {
 			$.each(frappe.route_options, function(fieldname, value) {
 				var df = frappe.meta.has_field(doctype, fieldname);
-				if(df && in_list(['Link', 'Data', 'Select', 'Dynamic Link'], df.fieldtype) && !df.no_copy) {
+				if(df && in_list(['Link', 'Data', 'Select', 'Dynamic Link', 'Table'], df.fieldtype) && !df.no_copy) {
 					doc[fieldname]=value;
 				}
 			});
 			frappe.route_options = null;
 		}
+		frappe.model.update_in_locals(doc);
 
 		return doc;
 	},
