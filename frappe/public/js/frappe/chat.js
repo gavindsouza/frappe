@@ -11,6 +11,8 @@ import './ui/capture'
 
 import './utils/user'
 
+// maybe i shouldve cleaned this file out when i had the chance
+
 /* eslint semi: "never" */
 // Fuck semicolons - https://mislav.net/2010/05/semicolons
 
