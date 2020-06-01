@@ -7,6 +7,7 @@ from distutils.spawn import find_executable
 import frappe
 from frappe.exceptions import SiteNotSpecifiedError
 from frappe.commands import pass_context, get_site
+from frappe.exceptions import SiteNotSpecifiedError
 from frappe.utils import update_progress_bar, get_bench_path
 from frappe.utils.response import json_handler
 from coverage import Coverage
