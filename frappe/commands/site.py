@@ -295,6 +295,7 @@ def migrate_to(context, frappe_provider):
 	from frappe.integrations.frappe_providers import migrate_to
 	for site in context.sites:
 		frappe.init(site=site)
+		frappe.connect()
 		migrate_to(site, frappe_provider)
 		frappe.destroy()
 	if not context.sites:
