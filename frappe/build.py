@@ -124,10 +124,12 @@ def download_frappe_assets(verbose=True):
 				build_missing_files()
 				return True
 			else:
+				print("NO assets_archive")
 				raise
 		except Exception:
 			# TODO: log traceback in bench.log
 			click.secho("An Error occurred while downloading assets...", fg="red")
+			print(frappe.get_traceback())
 			assets_setup = False
 		finally:
 			try:
