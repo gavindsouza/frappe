@@ -31,7 +31,7 @@ class TestScheduler(TestCase):
 		enqueue_events(site = frappe.local.site)
 		frappe.flags.execute_job = False
 
-		self.assertTrue('frappe.email.queue.clear_outbox', frappe.flags.enqueued_jobs)
+		self.assertTrue('frappe.email.queue.set_expiry_for_email_queue', frappe.flags.enqueued_jobs)
 		self.assertTrue('frappe.utils.change_log.check_for_update', frappe.flags.enqueued_jobs)
 		self.assertTrue('frappe.email.doctype.auto_email_report.auto_email_report.send_monthly', frappe.flags.enqueued_jobs)
 
@@ -42,12 +42,7 @@ class TestScheduler(TestCase):
 		job.db_set('last_execution', '2010-01-01 00:00:00')
 		frappe.db.commit()
 
-		# 1 job in queue
-		self.assertTrue(job.enqueue())
-		job.db_set('last_execution', '2010-01-01 00:00:00')
-		frappe.db.commit()
-
-		# 2nd job not loaded
+		# 1st job is in the queue (or running), don't enqueue it again
 		self.assertFalse(job.enqueue())
 		frappe.db.sql('DELETE FROM `tabScheduled Job Log` WHERE `scheduled_job_type`=%s', job.name)
 
