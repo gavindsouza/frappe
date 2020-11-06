@@ -253,7 +253,7 @@ class BackupGenerator:
 				backup_path_db=args.get('backup_path_db')
 			)
 
-		err, out = frappe.utils.execute_in_shell(cmd_string)
+		err, out = frappe.utils.execute_in_shell(cmd_string, verbose=self.verbose)
 
 	def send_email(self):
 		"""

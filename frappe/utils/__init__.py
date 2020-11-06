@@ -299,9 +299,16 @@ def unesc(s, esc_chars):
 	return s
 
 def execute_in_shell(cmd, verbose=False):
-	print(f"$ {cmd}")
+	print(cmd)
 	cmd = shlex.split(cmd)
-	process = subprocess.run(cmd, stdout=stdout, capture_output=True)
+	print(cmd)
+	stdout = subprocess.DEVNULL if not verbose else None
+	process = subprocess.run(cmd, stdout=stdout, capture_output=True, shell=True)
+
+	if verbose:
+		print(process.stdout) if process.stdout else None
+		print(process.stderr) if process.stderr else None
+
 	return process.stderr, process.stdout
 
 def get_path(*path, **kwargs):
