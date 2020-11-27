@@ -28,6 +28,26 @@ from six import (
 	iteritems
 )
 
+class InvalidColumnName(frappe.ValidationError):
+	pass
+
+class ParsableStr(str):
+	def __init__(self, val):
+		self.stripped = val.strip()
+		self.is_list = self.stripped.startswith("[") and self.stripped.endswith("]")
+		self.is_dict = self.stripped.startswith("{") and self.stripped.endswith("}")
+
+	def parse(self):
+		return frappe.parse_json(self)
+
+	def as_dict(self):
+		if self.is_dict:
+			return self.parse()
+
+	def as_list(self):
+		if self.is_list:
+			return self.parse()
+
 class Database(object):
 	"""
 	   Open a database connection with the given parmeters, if use_default is True, use the
@@ -42,9 +62,6 @@ class Database(object):
 	STANDARD_VARCHAR_COLUMNS = ('name', 'owner', 'modified_by', 'parent', 'parentfield', 'parenttype')
 	DEFAULT_COLUMNS = ['name', 'creation', 'modified', 'modified_by', 'owner', 'docstatus', 'parent',
 		'parentfield', 'parenttype', 'idx']
-
-	class InvalidColumnName(frappe.ValidationError): pass
-
 
 	def __init__(self, host=None, user=None, password=None, ac_name=None, use_default=0, port=None):
 		self.setup_type_map()
@@ -85,6 +102,18 @@ class Database(object):
 
 	def get_database_size(self):
 		pass
+
+	def fetch_parsable_result(self):
+		parsed_result = []
+		result = self._cursor.fetchall()
+
+		for row in result:
+			parsed_row = []
+			for col in row:
+				parsed_row += [ParsableStr(col) if isinstance(col, string_types) else col]
+			parsed_result.append(tuple(parsed_row))
+
+		return tuple(parsed_result)
 
 	def sql(self, query, values=(), as_dict = 0, as_list = 0, formatted = 0,
 		debug=0, ignore_ddl=0, as_utf8=0, auto_commit=0, update=None, explain=False):
@@ -186,11 +215,11 @@ class Database(object):
 					r.update(update)
 			return ret
 		elif as_list:
-			return self.convert_to_lists(self._cursor.fetchall(), formatted, as_utf8)
+			return self.convert_to_lists(self.fetch_parsable_result(), formatted, as_utf8)
 		elif as_utf8:
-			return self.convert_to_lists(self._cursor.fetchall(), formatted, as_utf8)
+			return self.convert_to_lists(self.fetch_parsable_result(), formatted, as_utf8)
 		else:
-			return self._cursor.fetchall()
+			return self.fetch_parsable_result()
 
 	def log_query(self, query, values, debug, explain):
 		# for debugging in tests
@@ -270,7 +299,7 @@ class Database(object):
 
 	def fetch_as_dict(self, formatted=0, as_utf8=0):
 		"""Internal. Converts results to dict."""
-		result = self._cursor.fetchall()
+		result = self.fetch_parsable_result()
 		ret = []
 		if result:
 			keys = [column[0] for column in self._cursor.description]
