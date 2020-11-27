@@ -90,6 +90,7 @@ class Document(BaseDocument):
 		self.doctype = self.name = None
 		self._default_new_docs = {}
 		self.flags = frappe._dict()
+		self.doc_diffs = frappe._dict()
 
 		if args and args[0] and isinstance(args[0], string_types):
 			# first arugment is doctype
@@ -404,6 +405,23 @@ class Document(BaseDocument):
 		'''Returns true if value is changed before and after saving'''
 		previous = self.get_doc_before_save()
 		return previous.get(fieldname)!=self.get(fieldname) if previous else True
+
+	def get_diff(self):
+		if self.is_new():
+			return {}
+
+		diffs = frappe._dict()
+		previous = (self.get_doc_before_save() or frappe.get_doc(self.doctype, self.name)).as_dict()
+
+		for k, v in self.as_dict().items():
+			_v = previous.get(k)
+			if v != _v:
+				diffs[k] = frappe._dict({
+					"before": _v,
+					"after": v
+				})
+
+		return diffs
 
 	def set_new_name(self, force=False, set_name=None, set_child_names=True):
 		"""Calls `frappe.naming.set_new_name` for parent and child docs."""
