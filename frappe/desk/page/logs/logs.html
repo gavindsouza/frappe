@@ -1,0 +1,27 @@
+<!-- jinja -->
+
+<table class="table table-striped table-bordered" style="max-width: 600px;">
+    <thead>
+        <tr>
+            <th style="width: 80%;">
+                {{ _("Log File") }}
+            </th>
+            <th>
+                {{ _("Size") }}
+            </th>
+            <th>
+                {{ _("Download") }}
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for file, size in json.loads(logs).items() %}
+        <tr>
+            <td><a href="/api/method/frappe.site_log?file={{ file }}&stream=true">{{ file }}</a></td>
+            <td>{{ size }}</td>
+            <td><a href="/api/method/frappe.site_log?file={{ file }}">Download</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+

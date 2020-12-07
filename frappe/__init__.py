@@ -5,6 +5,7 @@ globals attached to frappe module
 + some utility functions that should probably be moved
 """
 from __future__ import unicode_literals, print_function
+from time import sleep
 
 from six import iteritems, binary_type, text_type, string_types, PY2
 from werkzeug.local import Local, release_local
@@ -1701,6 +1702,39 @@ def get_version(doctype, name, limit=None, head=False, raise_err=True):
 @whitelist(allow_guest=True)
 def ping():
 	return "pong"
+
+
+@whitelist(methods=["GET"])
+def site_logs():
+	log_files = os.listdir(
+		os.path.join(local.site, "logs")
+	)
+	return {
+		file: os.path.getsize(
+			os.path.join(local.site, "logs", file)
+		) for file in log_files
+	}
+
+
+@whitelist(methods=["GET"])
+def site_log(file, stream=False):
+	from werkzeug.wrappers import Response
+	name = os.path.join(local.site, "logs", file)
+
+	if stream:
+		def log_generator(name):
+			with open(name) as f:
+				while True:
+					yield f.readline()
+					sleep(.1)
+		return Response(log_generator(name), content_type='text/event-stream')
+
+	response = Response()
+	response.mimetype = 'text'
+	response.data = open(name).read()
+	response.headers["Content-Disposition"] = f"attachment; filename={file}"
+
+	return response
 
 
 def safe_encode(param, encoding='utf-8'):
