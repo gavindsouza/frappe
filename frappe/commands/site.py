@@ -43,28 +43,14 @@ def new_site(site, mariadb_root_username=None, mariadb_root_password=None, admin
 		use(site)
 
 
-@click.command('restore')
-@click.argument('sql-file-path')
-@click.option('--mariadb-root-username', default='root', help='Root username for MariaDB')
-@click.option('--mariadb-root-password', help='Root password for MariaDB')
-@click.option('--db-name', help='Database name for site in case it is a new one')
-@click.option('--admin-password', help='Administrator password for new site')
-@click.option('--install-app', multiple=True, help='Install app after installation')
-@click.option('--with-public-files', help='Restores the public files of the site, given path to its tar file')
-@click.option('--with-private-files', help='Restores the private files of the site, given path to its tar file')
-@click.option('--force', is_flag=True, default=False, help='Ignore the validations and downgrade warnings. This action is not recommended')
-@pass_context
-def restore(context, sql_file_path, mariadb_root_username=None, mariadb_root_password=None, db_name=None, verbose=None, install_app=None, admin_password=None, force=None, with_public_files=None, with_private_files=None):
-	"Restore site database from an sql file"
+def restore_database(site, sql_file_path, mariadb_root_username, mariadb_root_password, admin_password, verbose, force):
 	from frappe.installer import (
 		extract_sql_from_archive,
-		extract_files,
 		is_downgrade,
 		is_partial,
 		validate_database_sql
 	)
 
-	force = context.force or force
 	decompressed_file_name = extract_sql_from_archive(sql_file_path)
 
 	# check if partial backup
@@ -82,9 +68,6 @@ def restore(context, sql_file_path, mariadb_root_username=None, mariadb_root_pas
 	# check if valid SQL file
 	validate_database_sql(decompressed_file_name, _raise=not force)
 
-	site = get_site(context)
-	frappe.init(site=site)
-
 	# dont allow downgrading to older versions of frappe without force
 	if not force and is_downgrade(decompressed_file_name, verbose=True):
 		warn_message = (
@@ -95,27 +78,56 @@ def restore(context, sql_file_path, mariadb_root_username=None, mariadb_root_pas
 
 	_new_site(frappe.conf.db_name, site, mariadb_root_username=mariadb_root_username,
 		mariadb_root_password=mariadb_root_password, admin_password=admin_password,
-		verbose=context.verbose, install_apps=install_app, source_sql=decompressed_file_name,
+		verbose=verbose, install_apps=install_app, source_sql=decompressed_file_name,
 		force=True, db_type=frappe.conf.db_type)
-
-	# Extract public and/or private files to the restored site, if user has given the path
-	if with_public_files:
-		with_public_files = os.path.join(base_path, with_public_files)
-		public = extract_files(site, with_public_files, 'public')
-		os.remove(public)
-
-	if with_private_files:
-		with_private_files = os.path.join(base_path, with_private_files)
-		private = extract_files(site, with_private_files, 'private')
-		os.remove(private)
 
 	# Removing temporarily created file
 	if decompressed_file_name != sql_file_path:
 		os.remove(decompressed_file_name)
 
+
+@click.command('restore')
+@click.argument('sql-file-path', nargs=-1)
+@click.option('--mariadb-root-username', default='root', help='Root username for MariaDB')
+@click.option('--mariadb-root-password', help='Root password for MariaDB')
+@click.option('--db-name', help='Database name for site in case it is a new one')
+@click.option('--admin-password', help='Administrator password for new site')
+@click.option('--install-app', multiple=True, help='Install app after installation')
+@click.option('--with-public-files', '--public-files', help='Restores the public files of the site, given path to its tar file')
+@click.option('--with-private-files', '--private-files', help='Restores the private files of the site, given path to its tar file')
+@click.option('--with-config', '--config', help='Restores the config file of the site')
+@click.option('--force', is_flag=True, default=False, help='Ignore the validations and downgrade warnings. This action is not recommended')
+@pass_context
+def restore(context, sql_file_path, mariadb_root_username=None, mariadb_root_password=None, db_name=None, verbose=None, install_app=None, admin_password=None, force=None, with_public_files=None, with_private_files=None, with_config=None):
+	"Restore site database from an sql file"
+	from frappe.installer import extract_files
+
+	force = context.force or force
+	verbose = context.verbose or verbose
+
+	site = get_site(context)
+	frappe.init(site=site)
+
+	if sql_file_path:
+		sql_file_path = sql_file_path[0]
+		restore_database(site, sql_file_path, mariadb_root_username, mariadb_root_password, admin_password, verbose, force)
+
+	# Extract public and/or private files to the restored site, if user has given the path
+	if with_public_files:
+		public = extract_files(site, with_public_files)
+		os.remove(public) # maybe this shouldnt happen?
+
+	if with_private_files:
+		private = extract_files(site, with_private_files)
+		os.remove(private)
+
+	if with_config:
+		print("NOT IMPLEMENTED!!!")
+
 	success_message = "Site {0} has been restored{1}".format(
 		site,
 		" with files" if (with_public_files or with_private_files) else ""
+		# and config
 	)
 	click.secho(success_message, fg="green")
 
