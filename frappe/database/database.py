@@ -5,6 +5,7 @@
 # --------------------
 
 from __future__ import unicode_literals
+from json.decoder import JSONDecodeError
 
 import re
 import time
@@ -31,22 +32,50 @@ from six import (
 class InvalidColumnName(frappe.ValidationError):
 	pass
 
+class InvalidListError(ValueError):
+	pass
+
+class InvalidDictError(ValueError):
+	pass
+
 class ParsableStr(str):
 	def __init__(self, val):
-		self.stripped = val.strip()
-		self.is_list = self.stripped.startswith("[") and self.stripped.endswith("]")
-		self.is_dict = self.stripped.startswith("{") and self.stripped.endswith("}")
+		self._is_processed = False
+		self._val = val
+
+	@property
+	def stripped(self):
+		if not hasattr(self, "_stripped"):
+			self._stripped = self._val.strip()
+		self._is_processed = True
+		return self._stripped
+
+	@property
+	def is_list(self):
+		return self.stripped.startswith("[") and self.stripped.endswith("]")
+
+	@property
+	def is_dict(self):
+		return self.stripped.startswith("{") and self.stripped.endswith("}")
 
 	def parse(self):
 		return frappe.parse_json(self)
 
 	def as_dict(self):
 		if self.is_dict:
-			return self.parse()
+			try:
+				return self.parse()
+			except JSONDecodeError:
+				raise InvalidDictError(f"Can't convert string '{self._val}' to dict")
+		return {}
 
 	def as_list(self):
 		if self.is_list:
-			return self.parse()
+			try:
+				return self.parse()
+			except JSONDecodeError:
+				raise InvalidListError(f"Can't convert string '{self._val}' to list")
+		return []
 
 class Database(object):
 	"""
