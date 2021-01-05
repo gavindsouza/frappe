@@ -1,0 +1,38 @@
+name: 'Documentation Check'
+on: [issue_comment]
+
+jobs:
+  backport:
+    name: 'Backport PR'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 'Setup Trigger'
+        uses: khan/pull-request-comment-trigger@master
+        id: check
+        with:
+          trigger: '@botboi backport'
+          reaction: rocket
+          prefix_only: true
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: 'Check Condition'
+        run: exit_with_success
+        if: steps.check.outputs.triggered != 'true'
+
+      - name: 'Setup Environment'
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+
+      - name: 'Clone Repository'
+        uses: actions/checkout@v2
+
+      - name: 'Run Backporter'
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          COMMENT_BODY: ${{ steps.check.outputs.comment_body }}
+        run: |
+          pip install requests --quiet
+          python $GITHUB_WORKSPACE/.github/helper/backport.py $PR_NUMBER '$COMMENT_BODY'
