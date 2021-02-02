@@ -33,17 +33,6 @@ local_manager = LocalManager([frappe.local])
 _site = None
 _sites_path = os.environ.get("SITES_PATH", ".")
 
-class RequestContext(object):
-
-	def __init__(self, environ):
-		self.request = Request(environ)
-
-	def __enter__(self):
-		init_request(self.request)
-
-	def __exit__(self, type, value, traceback):
-		frappe.destroy()
-
 @Request.application
 def application(request):
 	response = None

@@ -13,6 +13,8 @@
   "allow_guest",
   "column_break_3",
   "disabled",
+  "scheduled_events_section",
+  "scheduled_events",
   "section_break_8",
   "script",
   "help_section",
@@ -84,11 +86,22 @@
   {
    "fieldname": "help_html",
    "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "scheduled_events",
+   "fieldtype": "Table",
+   "label": "Scheduled Events",
+   "options": "Scheduled Server Script"
+  },
+  {
+   "depends_on": "eval:doc.script_type == \"Scheduler Event\"",
+   "fieldname": "scheduled_events_section",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-01-03 18:50:14.767595",
+ "modified": "2021-02-01 19:44:32.318154",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "Server Script",

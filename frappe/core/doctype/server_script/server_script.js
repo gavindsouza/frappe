@@ -43,6 +43,10 @@ frappe.ui.form.on('Server Script', {
 				'script_name': frm.doc.name,
 				'frequency': data.event_type
 			}
+		}).then(() => {
+			if (!frm.is_dirty()) {
+				frm.reload_doc();
+			}
 		});
 	},
 

@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "creation": "2021-02-01 19:23:05.011919",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "event",
+  "scheduled_job"
+ ],
+ "fields": [
+  {
+   "fieldname": "event",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Event",
+   "reqd": 1
+  },
+  {
+   "fieldname": "scheduled_job",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Scheduled Job",
+   "options": "Scheduled Job Type",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2021-02-01 19:38:11.657706",
+ "modified_by": "Administrator",
+ "module": "Core",
+ "name": "Scheduled Server Script",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
