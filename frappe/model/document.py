@@ -1067,6 +1067,8 @@ class Document(BaseDocument):
 		if commit:
 			frappe.db.commit()
 
+		setattr(self, fieldname, value)
+
 	def db_get(self, fieldname):
 		"""get database value for this fieldname"""
 		return frappe.db.get_value(self.doctype, self.name, fieldname)

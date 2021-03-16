@@ -265,3 +265,12 @@ class TestDocument(unittest.TestCase):
 		self.assertEqual(frappe.db.get_value("Currency", d.name), d.name)
 
 		frappe.delete_doc_if_exists("Currency", "Frappe Coin", 1)
+
+	def test_db_set(self):
+		todo = frappe.get_doc(doctype='ToDo', description='some description')
+		todo.insert()
+		todo.reload()
+		self.assertEqual(todo.description, 'some description')
+
+		todo.db_set('description', 'another description')
+		self.assertEqual(todo.description, 'another description')
