@@ -202,9 +202,12 @@ def install_app(context, apps):
 
 
 @click.command("list-apps")
+@click.option("--format", type=click.Choice(["json", "text"]), default="text")
 @pass_context
-def list_apps(context):
+def list_apps(context, format):
 	"List apps in site"
+
+	summary_dict = {}
 
 	def fix_whitespaces(text):
 		if site == context.sites[-1]:
@@ -234,17 +237,25 @@ def list_apps(context):
 			]
 			applications_summary = "\n".join(installed_applications)
 			summary = f"{site_title}\n{applications_summary}\n"
+			summary_dict[site] = [app.app_name for app in apps]
 
 		else:
-			applications_summary = "\n".join(frappe.get_installed_apps())
+			installed_applications = frappe.get_installed_apps()
+			applications_summary = "\n".join(installed_applications)
 			summary = f"{site_title}\n{applications_summary}\n"
+			summary_dict[site] = installed_applications
 
 		summary = fix_whitespaces(summary)
 
 		if applications_summary and summary:
-			print(summary)
+			if format == "text":
+				print(summary)
 
 		frappe.destroy()
+
+	if format == "json":
+		import json
+		print(json.dumps(summary_dict))
 
 
 @click.command('add-system-manager')
