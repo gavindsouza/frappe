@@ -39,6 +39,7 @@ lib64/
 parts/
 sdist/
 var/
+pip-wheel-metadata/
 wheels/
 *.egg-info/
 .installed.cfg
