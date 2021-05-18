@@ -304,11 +304,11 @@ def serve(port=8000, profile=False, no_reload=False, no_threading=False, site=No
 
 	if not os.environ.get('NO_STATICS'):
 		application = SharedDataMiddleware(application, {
-			str('/assets'): str(os.path.join(sites_path, 'assets'))
+			'/assets': str(os.path.join(sites_path, 'assets'))
 		})
 
 		application = StaticDataMiddleware(application, {
-			str('/files'): str(os.path.abspath(sites_path))
+			'/files': str(os.path.abspath(sites_path))
 		})
 
 	application.debug = True
