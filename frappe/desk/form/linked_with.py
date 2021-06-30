@@ -93,7 +93,8 @@ def cancel_all_linked_docs(docs, ignore_doctypes_on_cancel_all=[]):
 		if validate_linked_doc(doc, ignore_doctypes_on_cancel_all):
 			linked_doc = frappe.get_doc(doc.get("doctype"), doc.get("name"))
 			linked_doc.cancel()
-		frappe.publish_progress(percent=i/len(docs) * 100, title=_("Cancelling documents"))
+		progress = i / (len(docs) or i) * 100
+		frappe.publish_progress(percent=progress, title=_("Cancelling documents"))
 
 
 def validate_linked_doc(docinfo, ignore_doctypes_on_cancel_all=[]):
