@@ -8,7 +8,7 @@ from functools import wraps
 
 import yaml
 from six import iteritems
-from werkzeug.wrappers import Response
+from frappe.webserver import Response
 
 import frappe
 from frappe import _

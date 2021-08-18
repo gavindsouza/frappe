@@ -13,6 +13,7 @@ Read the documentation: https://frappeframework.com/docs
 import os, warnings
 
 _dev_server = os.environ.get('DEV_SERVER', False)
+_asgi_server = os.environ.get('FRAPPE_ASGI', False)
 
 if _dev_server:
 	warnings.simplefilter('always', DeprecationWarning)

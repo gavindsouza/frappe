@@ -4,7 +4,7 @@
 # MIT License. See license.txt
 
 import unittest
-from werkzeug.wrappers import Response
+from frappe.webserver import Response
 import time
 
 import frappe

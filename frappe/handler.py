@@ -1,7 +1,7 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 
-from werkzeug.wrappers import Response
+from frappe.webserver import Response
 
 import frappe
 import frappe.utils

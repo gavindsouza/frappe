@@ -6,8 +6,6 @@ import os
 import logging
 
 from werkzeug.local import LocalManager
-from werkzeug.wrappers import Request, Response
-from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug.middleware.profiler import ProfilerMiddleware
 from werkzeug.middleware.shared_data import SharedDataMiddleware
 
@@ -18,6 +16,8 @@ import frappe.api
 import frappe.utils.response
 from frappe.utils import get_site_name, sanitize_html
 from frappe.middlewares import StaticDataMiddleware
+from frappe.webserver import Request, Response
+from frappe.webserver.exceptions import HTTPException, NotFound
 from frappe.website.serve import get_response
 from frappe.utils.error import make_error_snapshot
 from frappe.core.doctype.comment.comment import update_comments_in_parent_after_request
@@ -44,6 +44,9 @@ class RequestContext(object):
 
 @Request.application
 def application(request):
+	return frappe(request)
+
+def frappe(request):
 	response = None
 
 	try:

@@ -1,7 +1,7 @@
 import mimetypes
 import os
 
-from werkzeug.wrappers import Response
+from frappe.webserver import Response
 from werkzeug.wsgi import wrap_file
 
 import frappe

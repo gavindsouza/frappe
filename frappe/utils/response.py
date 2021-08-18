@@ -14,8 +14,8 @@ import frappe.sessions
 import werkzeug.utils
 from werkzeug.local import LocalProxy
 from werkzeug.wsgi import wrap_file
-from werkzeug.wrappers import Response
-from werkzeug.exceptions import NotFound, Forbidden
+from frappe.webserver import Response
+from frappe.webserver.exceptions import NotFound, Forbidden
 from frappe.utils import cint
 from urllib.parse import quote
 from frappe.core.doctype.access_log.access_log import make_access_log

@@ -1,7 +1,7 @@
 # Copyright (c) 2020, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
 import frappe, unittest
-from werkzeug.wrappers import Response
+from frappe.webserver import Response
 from frappe.app import process_response
 
 HEADERS = ('Access-Control-Allow-Origin', 'Access-Control-Allow-Credentials',

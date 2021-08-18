@@ -7,7 +7,9 @@ import re
 
 import frappe
 from frappe.website.utils import extract_title
-from werkzeug.routing import Map, Rule, NotFound
+from werkzeug.routing import Map, Rule
+from frappe.webserver.exceptions import NotFound
+
 
 def get_page_info_from_web_page_with_dynamic_routes(path):
 	'''

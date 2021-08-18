@@ -6,7 +6,7 @@ from datetime import datetime
 from functools import wraps
 from typing import Union, Callable
 
-from werkzeug.wrappers import Response
+from frappe.webserver import Response
 
 import frappe
 from frappe import _

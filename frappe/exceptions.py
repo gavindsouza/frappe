@@ -2,7 +2,7 @@
 # MIT License. See license.txt
 
 # BEWARE don't put anything in this file except exceptions
-from werkzeug.exceptions import NotFound
+from frappe.webserver.exceptions import NotFound
 
 class SiteNotSpecifiedError(Exception):
 	def __init__(self, *args, **kwargs):
