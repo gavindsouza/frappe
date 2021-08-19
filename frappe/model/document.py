@@ -1,5 +1,6 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # MIT License. See license.txt
+from typing import Any
 import frappe
 import time
 from frappe import _, msgprint, is_whitelisted
@@ -17,8 +18,54 @@ from frappe.desk.form.document_follow import follow_document
 from frappe.core.doctype.server_script.server_script_utils import run_server_script_for_doc_event
 from frappe.utils.data import get_absolute_url
 
-# once_only validation
-# methods
+
+class Field:
+	def __set__(self, instance, value):
+		self.value = value
+		if self._doc:
+			self._doc = None
+
+	def __str__(self) -> str:
+		return self.value or ""
+
+	def __repr__(self) -> str:
+		class_name = self.__class__.__name__
+		return f"<{class_name}: {self.value}>"
+
+	def __eq__(self, other: object) -> bool:
+		return self.value == other
+
+
+class LinkField(Field):
+	def __init__(self, doctype, fieldname, value=None):
+		self.doctype = doctype
+		self.fieldname = fieldname
+		self.value = value
+		self._doc = None
+
+	def __get__(self, instance, owner):
+		if self.value is None:
+			return None
+		elif self._doc is None:
+			self._doc = frappe.get_doc(self.doctype, self.value)
+		return self._doc
+
+
+class DynamicLinkField(Field):
+	def __init__(self, reference, fieldname, value=None):
+		self.reference = reference
+		self.fieldname = fieldname
+		self.value = value
+		self._doc = None
+
+	def __get__(self, instance, owner):
+		dt = instance.get(self.reference)
+		if not all([self._doc, dt, self.value]):
+			return None
+		elif not self._doc and all(dt, self.value):
+			self._doc = frappe.get_doc(dt, self.value)
+		return self._doc
+
 
 def get_doc(*args, **kwargs):
 	"""returns a frappe.model.Document object.
@@ -172,6 +219,24 @@ class Document(BaseDocument):
 		# sometimes __setup__ can depend on child values, hence calling again at the end
 		if hasattr(self, "__setup__"):
 			self.__setup__()
+
+		# this will break when frappe.get_meta hasn't been set yet ;(
+		# that happens when not cached
+
+		if self.__class__.__name__ == "Meta":
+			return
+
+		for link in self.meta.get_link_fields():
+			link_value = self.get(link.fieldname)
+			if link_value:
+				link_field = LinkField(link.options, link.fieldname, link_value)
+				setattr(self, link.fieldname, link_field)
+
+		for dyna_link in self.meta.get_dynamic_link_fields():
+			dyna_value = self.__dict__.get(dyna_link.fieldname)
+			if dyna_value:
+				dynamic_field = DynamicLinkField(dyna_link.options, dyna_link.fieldname, dyna_value)
+				setattr(self, dyna_link.fieldname, dynamic_field)
 
 	def get_latest(self):
 		if not getattr(self, "latest", None):
