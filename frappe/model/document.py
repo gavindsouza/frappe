@@ -18,53 +18,55 @@ from frappe.desk.form.document_follow import follow_document
 from frappe.core.doctype.server_script.server_script_utils import run_server_script_for_doc_event
 from frappe.utils.data import get_absolute_url
 
+class LinkField:
+	def __init__(self, doctype, fieldname, value=None):
+		self.doctype = doctype
+		self.fieldname = fieldname
+		self.value = value
+		self.__doc = None
 
-class Field:
+	def __get__(self, instance, owner):
+		if self.value is None:
+			return None
+		elif self.__doc is None:
+			self.__doc = frappe.get_doc(self.doctype, self.value, lazy_load=True)
+			self.__doc.flags.is_field = True
+
+		return self.__doc
+
 	def __set__(self, instance, value):
 		self.value = value
-		if self._doc:
-			self._doc = None
-
-	def __str__(self) -> str:
-		return self.value or ""
+		if self.__doc:
+			self.__doc = None
 
 	def __repr__(self) -> str:
 		class_name = self.__class__.__name__
 		return f"<{class_name}: {self.value}>"
 
-	def __eq__(self, other: object) -> bool:
-		return self.value == other
-
-
-class LinkField(Field):
-	def __init__(self, doctype, fieldname, value=None):
-		self.doctype = doctype
-		self.fieldname = fieldname
-		self.value = value
-		self._doc = None
-
-	def __get__(self, instance, owner):
-		if self.value is None:
-			return None
-		elif self._doc is None:
-			self._doc = frappe.get_doc(self.doctype, self.value)
-		return self._doc
-
-
-class DynamicLinkField(Field):
+class DynamicLinkField:
 	def __init__(self, reference, fieldname, value=None):
 		self.reference = reference
 		self.fieldname = fieldname
 		self.value = value
-		self._doc = None
+		self.__doc = None
 
 	def __get__(self, instance, owner):
 		dt = instance.get(self.reference)
-		if not all([self._doc, dt, self.value]):
+		if not all([self.__doc, dt, self.value]):
 			return None
-		elif not self._doc and all(dt, self.value):
-			self._doc = frappe.get_doc(dt, self.value)
-		return self._doc
+		elif not self.__doc and all(dt, self.value):
+			self.__doc = frappe.get_doc(dt, self.value, lazy_load=True)
+			self.__doc.flags.is_field = True
+		return self.__doc
+
+	def __set__(self, instance, value):
+		self.value = value
+		if self.__doc:
+			self.__doc = None
+
+	def __repr__(self) -> str:
+		class_name = self.__class__.__name__
+		return f"<{class_name}: {self.value}>"
 
 
 def get_doc(*args, **kwargs):
@@ -154,6 +156,10 @@ class Document(BaseDocument):
 				if 'for_update' in kwargs:
 					self.flags.for_update = kwargs.get('for_update')
 
+			if 'lazy_load' in kwargs:
+				self._lazy_load = True
+				return
+
 			self.load_from_db()
 			return
 
@@ -181,6 +187,7 @@ class Document(BaseDocument):
 		self.load_from_db()
 
 	def load_from_db(self):
+		print(f"LOADING FROM DB {self.doctype} {self.name}")
 		"""Load document and children from database and create properties
 		from fields"""
 		if not getattr(self, "_metaclass", False) and self.meta.issingle:
@@ -1421,8 +1428,12 @@ class Document(BaseDocument):
 		return DocTags(self.doctype).get_tags(self.name).split(",")[1:]
 
 	def __repr__(self):
-		name = self.name or "unsaved"
 		doctype = self.__class__.__name__
+
+		if self.flags.is_field:
+			return f"<{doctype}: {self.name}>"
+
+		name = self.name or "unsaved"
 
 		docstatus = f" docstatus={self.docstatus}" if self.docstatus else ""
 		parent = f" parent={self.parent}" if self.parent else ""
@@ -1430,10 +1441,31 @@ class Document(BaseDocument):
 		return f"<{doctype}: {name}{docstatus}{parent}>"
 
 	def __str__(self):
+		if self.flags.is_field:
+			return self.name
+
 		name = self.name or "unsaved"
 		doctype = self.__class__.__name__
 
 		return f"{doctype}({name})"
+
+	def __eq__(self, other):
+		if self.flags.is_field:
+			if isinstance(other, str) and not self.is_new():
+				return self.name == other
+			elif isinstance(other, Document) and not other.is_new() and not self.is_new():
+				return self.doctype == other.doctype and self.name == other.name
+			return False
+
+		raise NotImplementedError()
+
+	def __ne__(self, other):
+		if self.flags.is_field:
+			return not self.__eq__(other)
+
+		raise NotImplementedError()
+
+	# TODO: Load from DB when attribute that isnt found called, if _lazy_load is set
 
 
 def execute_action(doctype, name, action, **kwargs):
