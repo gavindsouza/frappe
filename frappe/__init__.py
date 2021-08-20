@@ -140,7 +140,8 @@ lang = local("lang")
 if typing.TYPE_CHECKING:
 	from frappe.database.mariadb.database import MariaDBDatabase
 	from frappe.database.postgres.database import PostgresDatabase
-	db: typing.Union[MariaDBDatabase, PostgresDatabase]
+	from frappe.database.sqlite.database import SQLiteDatabase
+	db: typing.Union[MariaDBDatabase, PostgresDatabase, SQLiteDatabase]
 # end: static analysis hack
 
 def init(site, sites_path=None, new_site=False):

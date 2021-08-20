@@ -135,7 +135,7 @@ class Database(object):
 				if not isinstance(values, (dict, tuple, list)):
 					values = (values,)
 
-				self._cursor.execute(query, values)
+				self.execute_query(query, values)
 
 				if frappe.flags.in_migrate:
 					self.log_touched_tables(query, values)
@@ -182,6 +182,9 @@ class Database(object):
 			return self.convert_to_lists(self._cursor.fetchall(), formatted, as_utf8)
 		else:
 			return self._cursor.fetchall()
+
+	def execute_query(self, query, values=None):
+		return self._cursor.execute(query, values)
 
 	def log_query(self, query, values, debug, explain):
 		# for debugging in tests

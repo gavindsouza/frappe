@@ -1,4 +1,4 @@
-from pypika import MySQLQuery, Order, PostgreSQLQuery, terms
+from pypika import MySQLQuery, Order, PostgreSQLQuery, terms, SQLLiteQuery
 from pypika.queries import Schema, Table
 from frappe.utils import get_table_name
 
@@ -16,6 +16,15 @@ class Base:
 
 
 class MariaDB(Base, MySQLQuery):
+	Field = terms.Field
+
+	@classmethod
+	def from_(cls, table, *args, **kwargs):
+		if isinstance(table, str):
+			table = cls.DocType(table)
+		return super().from_(table, *args, **kwargs)
+
+class SQLLite(Base, SQLLiteQuery):
 	Field = terms.Field
 
 	@classmethod
