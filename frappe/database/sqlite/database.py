@@ -9,6 +9,13 @@ from frappe.utils import cstr, get_table_name
 
 
 class SQLiteDatabase(Database):
+	ProgrammingError = sqlite3.ProgrammingError
+	TableMissingError = sqlite3.ProgrammingError
+	OperationalError = sqlite3.OperationalError
+	InternalError = sqlite3.InternalError
+	SQLError = sqlite3.ProgrammingError
+	DataError = sqlite3.DataError
+
 	def __init__(self, host=None, user=None, password=None, ac_name=None, use_default=0, port=None):
 		self.setup_type_map()
 		# self.host = host or frappe.conf.db_host or '127.0.0.1'
@@ -145,57 +152,56 @@ class SQLiteDatabase(Database):
 	# column type
 	@staticmethod
 	def is_type_number(code):
-		return code == psycopg2.NUMBER
+		return code in ['int', 'decimal', 'float']
 
 	@staticmethod
 	def is_type_datetime(code):
-		return code == psycopg2.DATETIME
+		return code in ['datetime', 'timestamp']
 
 	# exception type
 	@staticmethod
 	def is_deadlocked(e):
-		return e.pgcode == '40P01'
+		return isinstance(e, sqlite3.OperationalError) and "locked" in str(e)
 
-	@staticmethod
-	def is_timedout(e):
-		# http://initd.org/psycopg/docs/extensions.html?highlight=datatype#psycopg2.extensions.QueryCanceledError
-		return
+	# @staticmethod
+	# def is_timedout(e):
+	# 	return
 
-	@staticmethod
-	def is_table_missing(e):
-		return getattr(e, 'pgcode', None) == '42P01'
+	# @staticmethod
+	# def is_table_missing(e):
+	# 	return getattr(e, 'pgcode', None) == '42P01'
 
-	@staticmethod
-	def is_missing_column(e):
-		return getattr(e, 'pgcode', None) == '42703'
+	# @staticmethod
+	# def is_missing_column(e):
+	# 	return getattr(e, 'pgcode', None) == '42703'
 
-	@staticmethod
-	def is_access_denied(e):
-		return e.pgcode == '42501'
+	# @staticmethod
+	# def is_access_denied(e):
+	# 	return e.pgcode == '42501'
 
-	@staticmethod
-	def cant_drop_field_or_key(e):
-		return e.pgcode.startswith('23')
+	# @staticmethod
+	# def cant_drop_field_or_key(e):
+	# 	return e.pgcode.startswith('23')
 
 	@staticmethod
 	def is_duplicate_entry(e):
-		return e.pgcode == '23505'
+		return isinstance(e, sqlite3.OperationalError) and "duplicate column name" in str(e)
 
 	@staticmethod
-	def is_primary_key_violation(e):
-		return e.pgcode == '23505' and '_pkey' in cstr(e.args[0])
+	def is_primary_key_violation(self, e):
+		return self.is_duplicate_entry(e) and 'PRIMARY' in cstr(e.args[1])
 
 	@staticmethod
-	def is_unique_key_violation(e):
-		return e.pgcode == '23505' and '_key' in cstr(e.args[0])
+	def is_unique_key_violation(self, e):
+		return self.is_duplicate_entry(e) and 'Duplicate' in cstr(e.args[1])
 
 	@staticmethod
 	def is_duplicate_fieldname(e):
-		return e.pgcode == '42701'
+		return isinstance(e, sqlite3.OperationalError) and "duplicate column name" in str(e)
 
-	@staticmethod
-	def is_data_too_long(e):
-		return e.pgcode == '22001'
+	# @staticmethod
+	# def is_data_too_long(e):
+	# 	return e.pgcode == '22001'
 
 	def rename_table(self, old_name: str, new_name: str) -> Union[List, Tuple]:
 		old_name = get_table_name(old_name)
@@ -280,8 +286,7 @@ class SQLiteDatabase(Database):
 		pass
 
 	def has_index(self, table_name, index_name):
-		return self.sql("""SELECT 1 FROM pg_indexes WHERE tablename='{table_name}'
-			and indexname='{index_name}' limit 1""".format(table_name=table_name, index_name=index_name))
+		return self.sql(f"SELECT 1 FROM sqlite_master WHERE tbl_name = '{table_name}' and name = 'index_name' and type = 'index' limit 1")
 
 	def add_index(self, doctype, fields, index_name=None):
 		"""Creates an index with given fields if not already created.
@@ -311,7 +316,18 @@ class SQLiteDatabase(Database):
 
 	def get_table_columns_description(self, table_name):
 		"""Returns list of column and its description"""
-		raise NotImplementedError("Refer to MariaDB for format reference")
+		mappings = {
+			"dflt_value": "default",
+			"cid": "index",
+			"pk": "unique",
+		}
+		pragma_values = self.sql(f"PRAGMA table_info('{table_name}')", as_dict=1)
+
+		for current, standard in mappings.items():
+			for column_type in pragma_values:
+				column_type[standard] = column_type.pop(current, None)
+
+		return pragma_values
 
 	def get_database_list(self, target):
 		return [d[0] for d in self.sql("SELECT datname FROM pg_database;")]

@@ -129,10 +129,11 @@ class DBTable:
 					continue
 				current_length = current_length[0]
 				if cint(current_length) != cint(new_length):
+					print(f"{cint(current_length)} : {cint(new_length)}")
 					try:
 						# check for truncation
-						max_length = frappe.db.sql("""SELECT MAX(CHAR_LENGTH(`{fieldname}`)) FROM `tab{doctype}`"""
-							.format(fieldname=col.fieldname, doctype=self.doctype))
+						length_func = "LENGTH" if frappe.conf.db_type == "sqlite" else "CHAR_LENGTH"
+						max_length = frappe.db.sql(f"SELECT MAX({length_func}(`{col.fieldname}`)) FROM `tab{self.doctype}`")
 
 					except frappe.db.InternalError as e:
 						if frappe.db.is_missing_column(e):
