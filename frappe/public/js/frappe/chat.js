@@ -1,6 +1,8 @@
 // Frappe Chat
 // Author - Achilles Rasquinha <achilles@frappe.io>
 
+// Test for roulette
+
 import Fuse   from 'fuse.js'
 import hyper  from '../lib/hyper.min'
 
