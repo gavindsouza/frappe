@@ -38,13 +38,17 @@ jobs:
         if: ${{ steps.check-build.outputs.build == 'strawberry' }}
         run: |
           echo $CI_BUILD_ID
+          echo '${{ toJson(needs.test.steps.check-build) }}'
+          echo '${{ toJson(job) }}'
+          echo '${{ toJson(steps) }}'
+          echo '${{ toJson(needs) }}'
         env:
           CI_BUILD_ID: ${{ github.run_id }}
 
   coveralls:
     name: Coverage Wrap Up
     needs: test
-    if: ${{ needs.test.steps.check-build.build == 'strawberry' }}
+    # if: ${{ needs.test.steps.check-build.build == 'strawberry' }}
     container: python:3-slim
     runs-on: ubuntu-18.04
     steps:
