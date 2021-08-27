@@ -63,6 +63,6 @@ jobs:
       - run: echo "WILDCARD=$(cat fruit/guess-the-fruit.txt)" >> $GITHUB_ENV
 
       - name: Coveralls Finished
-        if: $WILDCARD == 'strawberry'
+        if: ${WILDCARD} == 'strawberry'
         run: |
           echo 'strawberry'
