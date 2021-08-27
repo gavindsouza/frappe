@@ -58,3 +58,4 @@ jobs:
           echo '${{ toJson(job) }}'
           echo '${{ toJson(steps) }}'
           echo '${{ toJson(needs) }}'
+          coveralls
