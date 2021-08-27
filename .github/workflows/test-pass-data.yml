@@ -45,14 +45,24 @@ jobs:
         env:
           CI_BUILD_ID: ${{ github.run_id }}
 
+      - run: echo ${{ steps.check-build.outputs.build }} > guess-the-fruit.txt
+      - uses: actions/upload-artifact@v1
+        with:
+          name: fruit
+          path: guess-the-fruit.txt
+
   coveralls:
     name: Coverage Wrap Up
     needs: test
-    # if: ${{ needs.test.steps.check-build.build == 'strawberry' }}
     container: python:3-slim
     runs-on: ubuntu-18.04
     steps:
+      - uses: actions/download-artifact@v1
+        with:
+          name: fruit
+
       - name: Coveralls Finished
+        if: ${{ cat fruit/guess-the-fruit.txt | grep -q 'strawberry' }}
         run: |
           echo '${{ toJson(needs.test.steps.check-build) }}'
           echo '${{ toJson(job) }}'
