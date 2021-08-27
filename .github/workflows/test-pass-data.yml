@@ -32,7 +32,9 @@ jobs:
 
       - name: Is this going to be run?
         if: ${{ steps.check-build.outputs.build == 'strawberry' }}
-        run: echo $CI_BUILD_ID
+        run: |
+          echo $CI_BUILD_ID
+          echo "::set-output name=build::strawberry"
         env:
           CI_BUILD_ID: ${{ github.run_id }}
 
