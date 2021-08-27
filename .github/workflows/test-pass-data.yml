@@ -60,8 +60,9 @@ jobs:
       - uses: actions/download-artifact@v1
         with:
           name: fruit
+      - run: echo "WILDCARD=$(cat fruit/guess-the-fruit.txt)" >> $GITHUB_ENV
 
       - name: Coveralls Finished
-        if: $(cat fruit/guess-the-fruit.txt) == 'strawberry'
+        if: $WILDCARD == 'strawberry'
         run: |
           echo 'strawberry'
