@@ -1,5 +1,10 @@
 name: Server
 
+outputs:
+  build:
+    description: "Set value to run/skip composite job"
+    value: ${{ steps.check-build.outputs.build }}
+
 on:
   pull_request:
   workflow_dispatch:
@@ -36,11 +41,6 @@ jobs:
           echo $CI_BUILD_ID
         env:
           CI_BUILD_ID: ${{ github.run_id }}
-
-    outputs:
-      build:
-        description: "Set value to run/skip composite job"
-        value: ${{ steps.check-build.outputs.build }}
 
   coveralls:
     name: Coverage Wrap Up
