@@ -1,0 +1,50 @@
+name: Server
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches: [ develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+
+    name: Test for passing data between dependent builds
+
+    steps:
+      - name: Clone
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Check if build should be run
+        id: check-build
+        run: |
+          python "${GITHUB_WORKSPACE}/.github/helper/roulette.py"
+        env:
+          TYPE: "server"
+          PR_NUMBER: ${{ github.event.number }}
+          REPO_NAME: ${{ github.repository }}
+
+      - name: Is this going to be run?
+        if: ${{ steps.check-build.outputs.build == 'strawberry' }}
+        run: echo $CI_BUILD_ID
+        env:
+          CI_BUILD_ID: ${{ github.run_id }}
+
+  coveralls:
+    name: Coverage Wrap Up
+    needs: test
+    if: ${{ needs.test.steps.check-build.build == 'strawberry' }}
+    container: python:3-slim
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Clone
+        uses: actions/checkout@v2
+
+      - name: Coveralls Finished
+        run: echo 'COVERALLSS here'
