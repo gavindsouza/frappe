@@ -52,6 +52,5 @@ jobs:
         run: |
           echo '${{ toJson(needs.test.steps.check-build) }}'
           echo '${{ toJson(job) }}'
-          echo '${{ toJson(jobs) }}'
           echo '${{ toJson(steps) }}'
           echo '${{ toJson(needs) }}'
