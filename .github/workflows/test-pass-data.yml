@@ -62,10 +62,6 @@ jobs:
           name: fruit
 
       - name: Coveralls Finished
-        if: ${{ cat fruit/guess-the-fruit.txt | grep -q 'strawberry' }}
+        if: ${{ $(cat fruit/guess-the-fruit.txt) == 'strawberry' }}
         run: |
-          echo '${{ toJson(needs.test.steps.check-build) }}'
-          echo '${{ toJson(job) }}'
-          echo '${{ toJson(steps) }}'
-          echo '${{ toJson(needs) }}'
-          coveralls
+          echo 'strawberry'
