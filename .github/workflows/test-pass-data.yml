@@ -62,6 +62,6 @@ jobs:
           name: fruit
 
       - name: Coveralls Finished
-        if: ${{ $(cat fruit/guess-the-fruit.txt) == 'strawberry' }}
+        if: $(cat fruit/guess-the-fruit.txt) == 'strawberry'
         run: |
           echo 'strawberry'
