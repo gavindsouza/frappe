@@ -39,12 +39,18 @@ jobs:
   coveralls:
     name: Coverage Wrap Up
     needs: test
-    if: ${{ needs.test.steps.check-build.build == 'strawberry' }}
+    # if: ${{ needs.test.steps.check-build.build == 'strawberry' }}
     container: python:3-slim
     runs-on: ubuntu-18.04
     steps:
-      - name: Clone
-        uses: actions/checkout@v2
+      # - name: Clone
+      #   uses: actions/checkout@v2
 
       - name: Coveralls Finished
-        run: echo 'COVERALLSS here'
+        run: |
+          echo '${{ toJson(needs.test.steps.check-build) }}'
+          echo '${{ toJson(github) }}'
+          echo '${{ toJson(env) }}'
+          echo '${{ toJson(job) }}'
+          echo '${{ toJson(steps) }}'
+          echo '${{ toJson(needs) }}'
