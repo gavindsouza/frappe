@@ -8,9 +8,9 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-18.04
-
     name: Test for passing data between dependent builds
+    runs-on: ubuntu-18.04
+    using: composite
 
     steps:
       - name: Clone
@@ -34,25 +34,24 @@ jobs:
         if: ${{ steps.check-build.outputs.build == 'strawberry' }}
         run: |
           echo $CI_BUILD_ID
-          echo "::set-output name=build::strawberry"
         env:
           CI_BUILD_ID: ${{ github.run_id }}
+
+    outputs:
+      build:
+        description: "Set value to run/skip composite job"
+        value: ${{ steps.check-build.outputs.build }}
 
   coveralls:
     name: Coverage Wrap Up
     needs: test
-    # if: ${{ needs.test.steps.check-build.build == 'strawberry' }}
+    if: ${{ needs.test.steps.check-build.build == 'strawberry' }}
     container: python:3-slim
     runs-on: ubuntu-18.04
     steps:
-      # - name: Clone
-      #   uses: actions/checkout@v2
-
       - name: Coveralls Finished
         run: |
           echo '${{ toJson(needs.test.steps.check-build) }}'
-          echo '${{ toJson(github) }}'
-          echo '${{ toJson(env) }}'
           echo '${{ toJson(job) }}'
           echo '${{ toJson(steps) }}'
           echo '${{ toJson(needs) }}'
