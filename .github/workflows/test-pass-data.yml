@@ -1,9 +1,9 @@
 name: Server
 
-outputs:
-  build:
-    description: "Set value to run/skip composite job"
-    value: ${{ steps.check-build.outputs.build }}
+# outputs:
+#   build:
+#     description: "Set value to run/skip composite job"
+#     value: ${{ steps.check-build.outputs.build }}
 
 on:
   pull_request:
@@ -15,7 +15,6 @@ jobs:
   test:
     name: Test for passing data between dependent builds
     runs-on: ubuntu-18.04
-    using: composite
 
     steps:
       - name: Clone
@@ -53,5 +52,6 @@ jobs:
         run: |
           echo '${{ toJson(needs.test.steps.check-build) }}'
           echo '${{ toJson(job) }}'
+          echo '${{ toJson(jobs) }}'
           echo '${{ toJson(steps) }}'
           echo '${{ toJson(needs) }}'
