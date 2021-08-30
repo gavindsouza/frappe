@@ -31,13 +31,27 @@ class SQLiteTable(DBTable):
 		frappe.db.commit()
 
 	def alter(self):
+		from sqlite_utils.cli import transform
 		for col in self.columns.values():
 			col.build_for_alter_table(self.current_columns.get(col.fieldname.lower()))
 
 		query = []
 
+		# print([x.fieldname for x in self.add_column])
+		# print([x.fieldname for x in self.change_type])
+		# type = ["INTEGER", "TEXT", "FLOAT", "BLOB"]
+		# transform(path=frappe.db.database_file, type="")
+
+		# print([x.fieldname for x in self.add_index])
+		# print([x.fieldname for x in self.drop_index])
+
+
 		for col in self.add_column:
+			print("ADD COLUMN `{}` {}".format(col.fieldname, col.get_definition()))
 			query.append("ADD COLUMN `{}` {}".format(col.fieldname, col.get_definition()))
+
+		import sys
+		sys.exit()
 
 		for col in self.change_type:
 			using_clause = ""
