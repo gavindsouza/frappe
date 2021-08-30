@@ -144,16 +144,19 @@ def check_database_settings():
 
 
 def get_root_connection(root_login, root_password):
-	import getpass
+	from getpass import getpass
+
 	if not frappe.local.flags.root_connection:
-		if not root_login:
-			root_login = 'root'
-
-		if not root_password:
-			root_password = frappe.conf.get("root_password") or None
-
-		if not root_password:
-			root_password = getpass.getpass("MySQL root password: ")
+		root_login = (
+			root_login
+			or frappe.conf.get("root_login")
+			or "root"
+		)
+		root_password = (
+			root_password
+			or frappe.conf.get("root_password")
+			or getpass("MySQL root password: ")
+		)
 
 		frappe.local.flags.root_connection = frappe.database.get_db(user=root_login, password=root_password)
 
