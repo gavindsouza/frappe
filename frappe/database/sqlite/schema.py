@@ -32,6 +32,16 @@ class SQLiteTable(DBTable):
 
 	def alter(self):
 		from sqlite_utils.cli import transform
+
+		transform.callback(
+			path="./sqlite/private/database.sqlite3",
+			table="tabDefaultValue",
+			drop="column_name",
+			rename="",
+			# 'type', 'drop', 'rename', 'column_order', 'not_null', 'not_null_false', 'pk', 'pk_none', 'default', 'default_none', 'drop_foreign_key', 'sql', and 'load_extension'
+		)
+
+		transform(frappe.db.database_file, )
 		for col in self.columns.values():
 			col.build_for_alter_table(self.current_columns.get(col.fieldname.lower()))
 

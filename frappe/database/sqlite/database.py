@@ -39,6 +39,8 @@ class SQLiteDatabase(Database):
 
 	def setup_type_map(self):
 		self.db_type = 'sqlite'
+
+		# TODO: Update with sqlite types
 		self.type_map = {
 			'Currency':		('decimal', '18,6'),
 			'Int':			('bigint', None),
