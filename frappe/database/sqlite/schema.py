@@ -31,17 +31,9 @@ class SQLiteTable(DBTable):
 		frappe.db.commit()
 
 	def alter(self):
+		# TODO: take lock on this op. only one alter can run at any given instance!!!
 		from sqlite_utils.cli import transform
 
-		transform.callback(
-			path="./sqlite/private/database.sqlite3",
-			table="tabDefaultValue",
-			drop="column_name",
-			rename="",
-			# 'type', 'drop', 'rename', 'column_order', 'not_null', 'not_null_false', 'pk', 'pk_none', 'default', 'default_none', 'drop_foreign_key', 'sql', and 'load_extension'
-		)
-
-		transform(frappe.db.database_file, )
 		for col in self.columns.values():
 			col.build_for_alter_table(self.current_columns.get(col.fieldname.lower()))
 
@@ -58,10 +50,7 @@ class SQLiteTable(DBTable):
 
 		for col in self.add_column:
 			print("ADD COLUMN `{}` {}".format(col.fieldname, col.get_definition()))
-			query.append("ADD COLUMN `{}` {}".format(col.fieldname, col.get_definition()))
-
-		import sys
-		sys.exit()
+			# query.append("ADD COLUMN `{}` {}".format(col.fieldname, col.get_definition()))
 
 		for col in self.change_type:
 			using_clause = ""
@@ -73,11 +62,11 @@ class SQLiteTable(DBTable):
 			elif col.fieldtype in ("Check"):
 				using_clause = "USING {}::smallint".format(col.fieldname)
 
-			query.append("ALTER COLUMN `{0}` TYPE {1} {2}".format(
-				col.fieldname,
-				get_definition(col.fieldtype, precision=col.precision, length=col.length),
-				using_clause)
-			)
+			# query.append("ALTER COLUMN `{0}` TYPE {1} {2}".format(
+			# 	col.fieldname,
+			# 	get_definition(col.fieldtype, precision=col.precision, length=col.length),
+			# 	using_clause)
+			# )
 
 		for col in self.set_default:
 			if col.fieldname=="name":
@@ -95,7 +84,7 @@ class SQLiteTable(DBTable):
 			else:
 				col_default = "{}".format(frappe.db.escape(col.default))
 
-			query.append("ALTER COLUMN `{}` SET DEFAULT {}".format(col.fieldname, col_default))
+			# query.append("ALTER COLUMN `{}` SET DEFAULT {}".format(col.fieldname, col_default))
 
 		create_index_query = ""
 		for col in self.add_index:
@@ -113,21 +102,33 @@ class SQLiteTable(DBTable):
 				if not frappe.db.has_index(self.table_name, col.fieldname):
 					drop_index_query += 'DROP INDEX IF EXISTS "{}" ;'.format(col.fieldname)
 
-		if query:
-			try:
-				final_alter_query = "ALTER TABLE `{}` {}".format(self.table_name, ", ".join(query))
-				if final_alter_query: frappe.db.sql(final_alter_query)
-				if create_index_query: frappe.db.sql(create_index_query)
-				if drop_index_query: frappe.db.sql(drop_index_query)
-			except Exception as e:
-				# sanitize
-				if frappe.db.is_duplicate_fieldname(e):
-					frappe.throw(str(e))
-				elif frappe.db.is_duplicate_entry(e):
-					fieldname = str(e).split("'")[-2]
-					frappe.throw(_("""{0} field cannot be set as unique in {1},
-						as there are non-unique existing values""".format(
-						fieldname, self.table_name)))
-					raise e
-				else:
-					raise e
+
+		transform.callback(
+			path=frappe.db.database_file,
+			table=self.table_name,
+			drop="column_name",
+			rename="",
+			# 'type', 'drop', 'rename', 'column_order', 'not_null', 'not_null_false', 'pk', 'pk_none', 'default', 'default_none', 'drop_foreign_key', 'sql', and 'load_extension'
+		)
+
+		import sys
+		sys.exit()
+
+		# if query:
+		# 	try:
+		# 		final_alter_query = "ALTER TABLE `{}` {}".format(self.table_name, ", ".join(query))
+		# 		if final_alter_query: frappe.db.sql(final_alter_query)
+		# 		if create_index_query: frappe.db.sql(create_index_query)
+		# 		if drop_index_query: frappe.db.sql(drop_index_query)
+		# 	except Exception as e:
+		# 		# sanitize
+		# 		if frappe.db.is_duplicate_fieldname(e):
+		# 			frappe.throw(str(e))
+		# 		elif frappe.db.is_duplicate_entry(e):
+		# 			fieldname = str(e).split("'")[-2]
+		# 			frappe.throw(_("""{0} field cannot be set as unique in {1},
+		# 				as there are non-unique existing values""".format(
+		# 				fieldname, self.table_name)))
+		# 			raise e
+		# 		else:
+		# 			raise e
