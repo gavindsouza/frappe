@@ -1,8 +1,8 @@
 import re
 import frappe
 
-from frappe import _
-from frappe.utils import cstr, cint, flt
+from frappe import _, _dict
+from frappe.utils import cstr, cint, flt, get_table_name
 
 
 class InvalidColumnName(frappe.ValidationError): pass
@@ -10,10 +10,10 @@ class InvalidColumnName(frappe.ValidationError): pass
 class DBTable:
 	def __init__(self, doctype, meta=None):
 		self.doctype = doctype
-		self.table_name = 'tab{}'.format(doctype)
-		self.meta = meta or frappe.get_meta(doctype, False)
-		self.columns = {}
-		self.current_columns = {}
+		self.table_name = get_table_name(doctype)
+		self.meta = meta or frappe.get_meta(doctype, cached=False)
+		self.columns = _dict()
+		self.current_columns = _dict()
 
 		# lists for change
 		self.add_column = []
@@ -157,7 +157,7 @@ class DBTable:
 			self.current_columns[c.name.lower()] = c
 
 	def alter(self):
-		pass
+		raise NotImplementedError("This method has to be overriden by the class that inherits this class")
 
 
 class DbColumn:
