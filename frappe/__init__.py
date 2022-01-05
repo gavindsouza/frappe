@@ -846,7 +846,7 @@ def set_value(doctype, docname, fieldname, value=None):
 	return frappe.client.set_value(doctype, docname, fieldname, value)
 
 def get_cached_doc(*args, **kwargs):
-	if args and len(args) > 1 and isinstance(args[1], str):
+	if args and isinstance(args[1], str):
 		key = get_document_cache_key(args[0], args[1])
 		# local cache
 		doc = local.document_cache.get(key)
