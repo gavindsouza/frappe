@@ -93,9 +93,9 @@ jobs:
       - uses: actions/cache@v2
         id: restore-bench
         with:
-          path: ./frappe-bench
+          path: ~/frappe-bench
           key: ${{ github.sha }}
-      - run: ls frappe-bench
+      - run: ls ~/frappe-bench
 
       - name: Add to Hosts
         run: |
