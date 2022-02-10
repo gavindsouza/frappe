@@ -11,6 +11,7 @@ sudo chmod o+x /usr/local/bin/wkhtmltopdf
 # install cups
 sudo apt-get install libcups2-dev
 
-# install redis
-sudo apt-get install redis-server
-
+if [ "$TYPE" == "ui" ]; then
+    # install redis
+    sudo apt-get install redis-server
+fi

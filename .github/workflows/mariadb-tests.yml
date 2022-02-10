@@ -44,6 +44,7 @@ jobs:
         with:
           node-version: 14
       - run: |
+          sudo apt-get install redis-server
           pip install frappe-bench
           bench init frappe-bench --skip-assets --python "$(which python)" --frappe-path "${GITHUB_WORKSPACE}"
           cd ./frappe-bench
