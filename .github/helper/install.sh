@@ -4,9 +4,10 @@ set -e
 
 cd ~ || exit
 
-pip install frappe-bench
-
-bench init frappe-bench --skip-assets --python "$(which python)" --frappe-path "${GITHUB_WORKSPACE}"
+if [ "$TYPE" == "ui" ]; then
+    pip install frappe-bench;
+    bench init frappe-bench --skip-assets --python "$(which python)" --frappe-path "${GITHUB_WORKSPACE}";
+fi
 
 mkdir ~/frappe-bench/sites/test_site
 cp "${GITHUB_WORKSPACE}/.github/helper/consumer_db/$DB.json" ~/frappe-bench/sites/test_site/site_config.json
@@ -50,7 +51,6 @@ if [ "$TYPE" == "server" ]; then sed -i 's/^socketio:/# socketio:/g' Procfile; f
 if [ "$TYPE" == "server" ]; then sed -i 's/^redis_socketio:/# redis_socketio:/g' Procfile; fi
 
 if [ "$TYPE" == "ui" ]; then bench setup requirements --node; fi
-if [ "$TYPE" == "server" ]; then bench setup requirements --dev; fi
 
 # install node-sass which is required for website theme test
 cd ./apps/frappe || exit
