@@ -4,7 +4,7 @@ set -e
 
 cd ~ || exit
 
-if [ "$TYPE" == "ui" || "$DB" == "postgres" ]; then
+if [[ "$TYPE" == "ui" || "$DB" == "postgres" ]]; then
     pip install frappe-bench;
     bench init frappe-bench --skip-assets --python "$(which python)" --frappe-path "${GITHUB_WORKSPACE}";
 fi
