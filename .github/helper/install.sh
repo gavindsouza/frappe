@@ -9,12 +9,16 @@ if [[ "$TYPE" == "ui" || "$DB" == "postgres" ]]; then
     bench init frappe-bench --skip-assets --python "$(which python)" --frappe-path "${GITHUB_WORKSPACE}";
 fi
 
-mkdir ~/frappe-bench/sites/test_site
-cp "${GITHUB_WORKSPACE}/.github/helper/consumer_db/$DB.json" ~/frappe-bench/sites/test_site/site_config.json
+mkdir -p ./frappe-bench/sites/test_site
+cp "${GITHUB_WORKSPACE}/.github/helper/consumer_db/$DB.json" ./frappe-bench/sites/test_site/site_config.json
+pwd
+ls
+ls frappe-bench
+ls frappe-bench/sites
 
 if [ "$TYPE" == "server" ]; then
-      mkdir ~/frappe-bench/sites/test_site_producer;
-      cp "${GITHUB_WORKSPACE}/.github/helper/producer_db/$DB.json" ~/frappe-bench/sites/test_site_producer/site_config.json;
+      mkdir ./frappe-bench/sites/test_site_producer;
+      cp "${GITHUB_WORKSPACE}/.github/helper/producer_db/$DB.json" ./frappe-bench/sites/test_site_producer/site_config.json;
 fi
 
 if [ "$DB" == "mariadb" ];then
