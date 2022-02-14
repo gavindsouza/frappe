@@ -9,16 +9,12 @@ if [[ "$TYPE" == "ui" || "$DB" == "postgres" ]]; then
     bench init frappe-bench --skip-assets --python "$(which python)" --frappe-path "${GITHUB_WORKSPACE}";
 fi
 
-mkdir -p ./frappe-bench/sites/test_site
-cp "${GITHUB_WORKSPACE}/.github/helper/consumer_db/$DB.json" ./frappe-bench/sites/test_site/site_config.json
-pwd
-ls
-ls frappe-bench
-ls frappe-bench/sites
+mkdir /home/runner/frappe-bench/sites/test_site
+cp "${GITHUB_WORKSPACE}/.github/helper/consumer_db/$DB.json" /home/runner/frappe-bench/sites/test_site/site_config.json
 
 if [ "$TYPE" == "server" ]; then
-      mkdir ./frappe-bench/sites/test_site_producer;
-      cp "${GITHUB_WORKSPACE}/.github/helper/producer_db/$DB.json" ./frappe-bench/sites/test_site_producer/site_config.json;
+      mkdir /home/runner/frappe-bench/sites/test_site_producer;
+      cp "${GITHUB_WORKSPACE}/.github/helper/producer_db/$DB.json" /home/runner/frappe-bench/sites/test_site_producer/site_config.json;
 fi
 
 if [ "$DB" == "mariadb" ];then
@@ -46,7 +42,7 @@ if [ "$DB" == "postgres" ];then
     echo "travis" | psql -h 127.0.0.1 -p 5432 -c "CREATE USER test_frappe_producer WITH PASSWORD 'test_frappe'" -U postgres;
 fi
 
-cd ./frappe-bench || exit
+cd /home/runner/frappe-bench || exit
 
 sed -i 's/^watch:/# watch:/g' Procfile
 sed -i 's/^schedule:/# schedule:/g' Procfile

@@ -95,9 +95,9 @@ jobs:
       - uses: actions/cache@v2
         id: restore-bench
         with:
-          path: ./frappe-bench
+          path: /home/runner/frappe-bench
           key: bench
-      - run: ls ./frappe-bench
+      - run: ls /home/runner/frappe-bench
 
       - name: Add to Hosts
         run: |
