@@ -51,12 +51,12 @@ jobs:
           cd ./frappe-bench
           bench setup requirements --dev
           cd ..
-          pwd
+          tar -zcvf frappe-bench.tar.gz frappe-bench
 
       - uses: actions/upload-artifact@v2
         with:
           name: frappe-bench
-          path: ./frappe-bench
+          path: ./frappe-bench.tar.gz
           retention-days: 1
 
   backend-test:
@@ -96,7 +96,10 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: frappe-bench
-      - run: ls ./frappe-bench
+
+      - run: |
+          tar -xvf frappe-bench.tar.gz
+          ls ./frappe-bench
 
       - name: Add to Hosts
         run: |
@@ -159,7 +162,10 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: frappe-bench
-      - run: ls ./frappe-bench
+
+      - run: |
+          tar -xvf frappe-bench.tar.gz
+          ls ./frappe-bench
 
       - name: Add to Hosts
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
