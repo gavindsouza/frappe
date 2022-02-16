@@ -103,6 +103,8 @@ jobs:
         run: |
           pip install frappe-bench
           tar -xvf frappe-bench.tar.gz -C /home/runner
+          cd /home/runner/frappe-bench
+          bench setup env
 
       - name: Add to Hosts
         run: |
@@ -170,6 +172,8 @@ jobs:
         run: |
           pip install frappe-bench
           tar -xvf frappe-bench.tar.gz -C /home/runner
+          cd /home/runner/frappe-bench
+          bench setup env
 
       - name: Add to Hosts
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
