@@ -43,6 +43,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: 14
+
       - run: |
           sudo apt-get install redis-server
           pip install frappe-bench
@@ -104,16 +105,11 @@ jobs:
           echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
           echo "127.0.0.1 test_site_producer" | sudo tee -a /etc/hosts
 
-      - name: Install Dependencies
-        run: bash ${GITHUB_WORKSPACE}/.github/helper/install_dependencies.sh
-        env:
-          BEFORE: ${{ env.GITHUB_EVENT_PATH.before }}
-          AFTER: ${{ env.GITHUB_EVENT_PATH.after }}
-          TYPE: server
-
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
         env:
+          BEFORE: ${{ env.GITHUB_EVENT_PATH.before }}
+          AFTER: ${{ env.GITHUB_EVENT_PATH.after }}
           DB: mariadb
           TYPE: server
 
@@ -172,16 +168,11 @@ jobs:
       - name: Add to Hosts
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
 
-      - name: Install Dependencies
-        run: bash ${GITHUB_WORKSPACE}/.github/helper/install_dependencies.sh
-        env:
-          BEFORE: ${{ env.GITHUB_EVENT_PATH.before }}
-          AFTER: ${{ env.GITHUB_EVENT_PATH.after }}
-          TYPE: server
-
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
         env:
+          BEFORE: ${{ env.GITHUB_EVENT_PATH.before }}
+          AFTER: ${{ env.GITHUB_EVENT_PATH.after }}
           DB: mariadb
           TYPE: server
 
