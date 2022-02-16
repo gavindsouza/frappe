@@ -97,8 +97,9 @@ jobs:
         with:
           name: frappe-bench
 
+      - run: tar -xvf frappe-bench.tar.gz
       - run: |
-          tar -xvf frappe-bench.tar.gz
+          pwd
           ls ./frappe-bench
 
       - name: Add to Hosts
@@ -163,8 +164,9 @@ jobs:
         with:
           name: frappe-bench
 
+      - run: tar -xvf frappe-bench.tar.gz
       - run: |
-          tar -xvf frappe-bench.tar.gz
+          pwd
           ls ./frappe-bench
 
       - name: Add to Hosts
