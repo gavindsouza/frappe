@@ -44,14 +44,16 @@ jobs:
         with:
           node-version: 14
 
-      - run: |
+      - name: Setup Dependencies
+        run: |
           sudo apt-get install redis-server
           pip install frappe-bench
           bench init frappe-bench --skip-assets --python "$(which python)" --frappe-path "${GITHUB_WORKSPACE}"
           cd ./frappe-bench
           bench setup requirements --dev
-          cd ..
-          tar -zcvf frappe-bench.tar.gz frappe-bench
+
+      - name: Archive Bench and Dependencies
+        run: tar -zcvf frappe-bench.tar.gz frappe-bench
 
       - uses: actions/upload-artifact@v2
         with:
@@ -97,10 +99,10 @@ jobs:
         with:
           name: frappe-bench
 
-      - run: tar -xvf frappe-bench.tar.gz -C /home/runner
-      - run: |
-          pwd
-          ls ~/frappe-bench
+      - name: Restore Bench
+        run: |
+          pip install frappe-bench
+          tar -xvf frappe-bench.tar.gz -C /home/runner
 
       - name: Add to Hosts
         run: |
@@ -164,10 +166,10 @@ jobs:
         with:
           name: frappe-bench
 
-      - run: tar -xvf frappe-bench.tar.gz -C /home/runner
-      - run: |
-          pwd
-          ls ~/frappe-bench
+      - name: Restore Bench
+        run: |
+          pip install frappe-bench
+          tar -xvf frappe-bench.tar.gz -C /home/runner
 
       - name: Add to Hosts
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
