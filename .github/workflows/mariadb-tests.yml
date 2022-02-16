@@ -97,10 +97,10 @@ jobs:
         with:
           name: frappe-bench
 
-      - run: tar -xvf frappe-bench.tar.gz
+      - run: tar -xvf frappe-bench.tar.gz -C /home/runner
       - run: |
           pwd
-          ls ./frappe-bench
+          ls ~/frappe-bench
 
       - name: Add to Hosts
         run: |
@@ -126,7 +126,7 @@ jobs:
         with:
           name: MariaDB
           fail_ci_if_error: true
-          files: /home/runner/frappe-bench/sites/coverage.xml
+          files: ~/frappe-bench/sites/coverage.xml
           verbose: true
           flags: server
 
@@ -164,10 +164,10 @@ jobs:
         with:
           name: frappe-bench
 
-      - run: tar -xvf frappe-bench.tar.gz
+      - run: tar -xvf frappe-bench.tar.gz -C /home/runner
       - run: |
           pwd
-          ls ./frappe-bench
+          ls ~/frappe-bench
 
       - name: Add to Hosts
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
