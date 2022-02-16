@@ -53,11 +53,11 @@ jobs:
           cd ..
           pwd
 
-      - uses: actions/cache@v2
-        id: restore-bench
+      - uses: actions/upload-artifact@v2
         with:
+          name: frappe-bench
           path: ./frappe-bench
-          key: bench
+          retention-days: 1
 
   backend-test:
     name: Python Unit Tests
@@ -93,12 +93,10 @@ jobs:
           node-version: 14
           check-latest: true
 
-      - uses: actions/cache@v2
-        id: restore-bench
+      - uses: actions/download-artifact@v2
         with:
-          path: /home/runner/frappe-bench
-          key: bench
-      - run: ls /home/runner/frappe-bench
+          name: frappe-bench
+      - run: ls ./frappe-bench
 
       - name: Add to Hosts
         run: |
@@ -158,12 +156,10 @@ jobs:
           node-version: 14
           check-latest: true
 
-      - uses: actions/cache@v2
-        id: restore-bench
+      - uses: actions/download-artifact@v2
         with:
-          path: ./frappe-bench
-          key: bench
-      - run: ls frappe-bench
+          name: frappe-bench
+      - run: ls ./frappe-bench
 
       - name: Add to Hosts
         run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
