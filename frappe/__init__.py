@@ -1122,18 +1122,17 @@ def get_hooks(hook=None, default=None, app_name=None):
 	:param app_name: Filter by app."""
 	def load_app_hooks(app_name=None):
 		hooks = {}
-		for app in [app_name] if app_name else get_installed_apps(sort=True):
-			app = "frappe" if app=="webnotes" else app
+		apps = [app_name] if app_name else get_installed_apps()
+
+		for app in apps:
 			try:
-				app_hooks = get_module(app + ".hooks")
+				app_hooks = get_module(f"{app}.hooks")
 			except ImportError:
 				if local.flags.in_install_app:
 					# if app is not installed while restoring
 					# ignore it
 					pass
 				print('Could not find app "{0}"'.format(app_name))
-				if not request:
-					sys.exit(1)
 				raise
 			for key in dir(app_hooks):
 				if not key.startswith("_"):
