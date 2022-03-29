@@ -199,11 +199,11 @@ class Session:
 	def __init__(self, user, resume=False, full_name=None, user_type=None):
 		self.sid = cstr(frappe.form_dict.get('sid') or
 			unquote(frappe.request.cookies.get('sid', 'Guest')))
-		self.user = user
+		self.user = user or "Guest"
 		self.device = frappe.form_dict.get("device") or "desktop"
 		self.user_type = user_type
 		self.full_name = full_name
-		self.data = frappe._dict({'data': frappe._dict({})})
+		self.data = frappe._dict(data=frappe._dict())
 		self.time_diff = None
 
 		# set local session
@@ -212,9 +212,8 @@ class Session:
 		if resume:
 			self.resume()
 
-		else:
-			if self.user:
-				self.start()
+		elif self.user:
+			self.start()
 
 	def start(self):
 		"""start a new session"""
