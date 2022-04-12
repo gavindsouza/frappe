@@ -943,7 +943,10 @@ class BaseDocument(object):
 
 			if df and (
 				df.get("ignore_xss_filter")
-				or (df.get("fieldtype") in ("Data", "Small Text", "Text") and df.get("options") == "Email")
+				or (
+					df.get("fieldtype") in ("Data", "Small Text", "Text")
+					and df.get("options") in ("Email", "Phone")
+				)
 				or df.get("fieldtype") in ("Attach", "Attach Image", "Barcode", "Code")
 				# cancelled and submit but not update after submit should be ignored
 				or self.docstatus.is_cancelled()
