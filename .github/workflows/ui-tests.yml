@@ -152,7 +152,7 @@ jobs:
 
       - name: Check If Coverage Report Exists
         id: check_coverage
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: "/home/runner/frappe-bench/apps/frappe/.cypress-coverage/clover.xml"
 
