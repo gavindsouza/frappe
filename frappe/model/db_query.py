@@ -1,4 +1,4 @@
-# Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 """build query for doclistview and return results"""
 
@@ -7,7 +7,7 @@ import json
 import re
 from datetime import datetime
 from enum import Enum
-from typing import Generator
+from typing import TYPE_CHECKING, Generator
 
 import frappe
 import frappe.defaults
@@ -34,6 +34,9 @@ from frappe.utils import (
 )
 from frappe.utils.data import sbool
 
+if TYPE_CHECKING:
+	from frappe.model.meta import Meta
+
 LOCATE_PATTERN = re.compile(r"locate\([^,]+,\s*[`\"]?name[`\"]?\s*\)", flags=re.IGNORECASE)
 LOCATE_CAST_PATTERN = re.compile(
 	r"locate\(([^,]+),\s*([`\"]?name[`\"]?)\s*\)", flags=re.IGNORECASE
@@ -45,6 +48,8 @@ CAST_VARCHAR_PATTERN = re.compile(
 	r"([`\"]?tab[\w`\" -]+\.[`\"]?name[`\"]?)(?!\w)", flags=re.IGNORECASE
 )
 ORDER_BY_PATTERN = re.compile(r"\ order\ by\ |\ asc|\ ASC|\ desc|\ DESC", flags=re.IGNORECASE)
+# SUB_QUERY_PATTERN will look for malicious patterns like `,`, '(', ')', '@', ;' in each field which may leads to sql
+# injection. example : field = "`DocType`.`issingle`, version()" As field contains `,` and mysql function `version()`
 SUB_QUERY_PATTERN = re.compile("^.*[,();@].*")
 IS_QUERY_PATTERN = re.compile(r"^(select|delete|update|drop|create)\s")
 IS_QUERY_PREDICATE_PATTERN = re.compile(
@@ -92,6 +97,7 @@ sql_functions = [
 class DatabaseQuery:
 	def __init__(self, doctype: str, user: str | None = None):
 		self.doctype = doctype
+		self.doctype_table = f"`tab{self.doctype}`"
 		self.doctype_meta = frappe.get_meta(doctype)
 		self.tables: list[str] = []
 		self.link_tables: list[frappe._dict] = []
@@ -104,6 +110,7 @@ class DatabaseQuery:
 		self.reference_doctype = None
 		self.strict = False
 		self.with_childnames = False
+		self.validated_fields = {}
 
 	@property
 	def doctype_meta(self):
@@ -169,7 +176,7 @@ class DatabaseQuery:
 		if fields:
 			self.fields = fields
 		else:
-			self.fields = [f"`tab{self.doctype}`.`{pluck or 'name'}`"]
+			self.fields = [f"{self.doctype_table}.`{pluck or 'name'}`"]
 
 		if start:
 			limit_start = start
@@ -272,107 +279,60 @@ class DatabaseQuery:
 
 		if self.with_childnames:
 			for t in self.tables:
-				if t != f"`tab{self.doctype}`":
+				if t != self.doctype_table:
 					self.fields.append(f"{t}.name as '{t[4:-1]}:name'")
 
 	def get_validated_field(self, field: str) -> tuple[str, dict]:
-		"""
-		regex : ^.*[,();].*
-		purpose : The regex will look for malicious patterns like `,`, '(', ')', '@', ;' in each
-		                field which may leads to sql injection.
-		example :
-		        field = "`DocType`.`issingle`, version()"
-		As field contains `,` and mysql function `version()`, with the help of regex
-		the system will filter out this field.
-		"""
-		# Wrapping fields with grave quotes to allow support for sql keywords
-		# TODO: Add support for wrapping fields with sql functions and distinct keyword
-		stripped_field = field.strip().lower()
-		default_table = f"`tab{self.doctype}`"
-		table_data = {"data": (default_table,), "type": Table.DefaultTable}
+		"""Validate field and return the transformed field and table data"""
+		# return if field is already validated
+		if field in self.validated_fields:
+			return self.validated_fields[field]
 
-		if SUB_QUERY_PATTERN.match(field):
-			if stripped_field[0] == "(":
-				subquery_token = stripped_field[1:].lstrip().split(" ", 1)[0]
-				if subquery_token in BLACKLIST_KEYWORDS:
-					raise_sub_query_or_func_exception()
+		table_data = None
+		validated_field = None
+		field_obj = Field(field)
+		default_table_data = {"data": (self.doctype_table,), "type": Table.DefaultTable}
 
-			function = stripped_field.split("(", 1)[0].rstrip()
-			if function in BLACKLIST_FUNCTIONS:
-				frappe.throw(
-					frappe._("Use of function {0} in field is restricted").format(function), exc=frappe.DataError
-				)
-
-			# prevent access to global variables
-			if "@" in stripped_field:
-				raise_sub_query_or_func_exception()
-
-		if FIELD_QUOTE_PATTERN.match(field):
-			raise_sub_query_or_func_exception()
-
-		if FIELD_COMMA_PATTERN.match(field):
-			raise_sub_query_or_func_exception()
-
-		_is_query(field)
+		field_obj.validate_sub_query_in_field()
 
 		if self.strict:
-			if STRICT_FIELD_PATTERN.match(field):
-				frappe.throw(frappe._("Illegal SQL Query"))
+			field_obj.strict_validate_field()
 
-			if STRICT_UNION_PATTERN.match(stripped_field):
-				frappe.throw(frappe._("Illegal SQL Query"))
-
-		if "." in stripped_field:
+		if "." in field_obj.stripped:
 			# handle child_table.fieldname syntax to `tabChild DocType`.`fieldname`
-			if "tab" not in stripped_field:
-				alias = None
-				aliased_clause = re.split(" as ", field, maxsplit=1, flags=re.IGNORECASE)
-				if len(aliased_clause) == 2:
-					field, alias = aliased_clause
-
-				linked_fieldname, fieldname = field.split(".", 1)
-				linked_field = self.doctype_meta.get_field(linked_fieldname)
-				linked_doctype = linked_field.options
-
-				if linked_field.fieldtype == "Link":
-					table_data = {"data": (linked_doctype, linked_fieldname), "type": Table.LinkTable}
-				elif linked_field.fieldtype == "Table":
-					table_data = {"data": (f"`tab{linked_doctype}`",), "type": Table.ChildTable}
-
-				field = f"`tab{linked_doctype}`.`{fieldname}`"
-				if alias:
-					field = f"{field} as {alias}"
-				stripped_field = field
+			if "tab" not in field_obj.stripped:
+				field, table_data = get_child_table_field(field, self.doctype_meta)
+				field_obj.stripped = field
 
 			# assume implicit table joining and add table to query
 			else:
 				table_name = fetch_table_name_from_field(field)
-				if table_name[0] != "`":
-					table_name = f"`{table_name}`"
-				if table_name not in self.tables and table_name not in (
-					d.table_name for d in self.link_tables
-				):
-					self.append_table(table_name)
+				self.append_table(table_name)
 
 		# If there are more than one table, the fieldname must not be ambiguous.
 		# If the fieldname is not explicitly mentioned, set the default table
-		elif "(" not in stripped_field:
-			field = stripped_field = f"{self.tables[0]}.{field}"
+		elif "(" not in field_obj.stripped:
+			field = field_obj.stripped = f"{self.tables[0]}.{field}"
 
 		field = cast_name(field)
 
 		if (
-			stripped_field[0] in {"`", "*", '"', "'"}
-			or "(" in stripped_field
-			or "distinct" in stripped_field
+			field_obj.stripped[0] in {"`", "*", '"', "'"}
+			or "(" in field_obj.stripped
+			or "distinct" in field_obj.stripped
 		):
-			return field, table_data
+			validated_field = field, table_data or default_table_data
 
 		elif alias_clause := re.split(" as ", field, maxsplit=1, flags=re.IGNORECASE):
 			if len(alias_clause) == 2:
-				return f"`{alias_clause[0]}` as {alias_clause[1]}", table_data
+				validated_field = f"`{alias_clause[0]}` as {alias_clause[1]}", table_data or default_table_data
 
-		return f"`{field}`", table_data
+		if not validated_field:
+			validated_field = f"`{field}`", table_data or default_table_data
+
+		self.validated_fields[field_obj.original] = validated_field
+
+		return validated_field
 
 	def build_and_run(self):
 		args = self.prepare_args()
@@ -762,7 +722,7 @@ class DatabaseQuery:
 		additional_filters_config = get_additional_filters_from_hooks()
 		f = get_filter(self.doctype, f, additional_filters_config)
 
-		tname = "`tab" + f.doctype + "`"
+		tname = f"`tab{f.doctype}`"
 		if tname not in self.tables:
 			self.append_table(tname)
 
@@ -926,7 +886,7 @@ class DatabaseQuery:
 		return condition
 
 	def extract_tables(self):
-		self.append_table(f"`tab{self.doctype}`")
+		self.append_table(self.doctype_table)
 		for field in self.fields:
 			_, table = self.get_validated_field(field)
 			self.add_table(table)
@@ -958,7 +918,7 @@ class DatabaseQuery:
 			# skip user perm check if owner constraint is required
 			if requires_owner_constraint(role_permissions):
 				self.match_conditions.append(
-					f"`tab{self.doctype}`.`owner` = {frappe.db.escape(self.user, percent=False)}"
+					f"{self.doctype_table}.`owner` = {frappe.db.escape(self.user, percent=False)}"
 				)
 
 			# add user permission only if role has read perm
@@ -988,7 +948,7 @@ class DatabaseQuery:
 
 	def get_share_condition(self):
 		return (
-			cast_name(f"`tab{self.doctype}`.name")
+			cast_name(f"{self.doctype_table}.name")
 			+ f" in ({', '.join(frappe.db.escape(s, percent=False) for s in self.shared)})"
 		)
 
@@ -1018,7 +978,7 @@ class DatabaseQuery:
 					condition = ""
 				else:
 					empty_value_condition = cast_name(
-						f"ifnull(`tab{self.doctype}`.`{df.get('fieldname')}`, '')=''"
+						f"ifnull({self.doctype_table}.`{df.get('fieldname')}`, '')=''"
 					)
 					condition = empty_value_condition + " or "
 
@@ -1040,7 +1000,7 @@ class DatabaseQuery:
 
 				if docs:
 					values = ", ".join(frappe.db.escape(doc, percent=False) for doc in docs)
-					condition += cast_name(f"`tab{self.doctype}`.`{df.get('fieldname')}`") + f" in ({values})"
+					condition += cast_name(f"{self.doctype_table}.`{df.get('fieldname')}`") + f" in ({values})"
 					match_conditions.append(f"({condition})")
 					match_filters[df.get("options")] = docs
 
@@ -1102,12 +1062,12 @@ class DatabaseQuery:
 					sort_field = self.doctype_meta.sort_field or "modified"
 					sort_order = (self.doctype_meta.sort_field and self.doctype_meta.sort_order) or "desc"
 					if self.order_by:
-						args.order_by = f"`tab{self.doctype}`.`{sort_field or 'modified'}` {sort_order or 'desc'}"
+						args.order_by = f"{self.doctype_table}.`{sort_field or 'modified'}` {sort_order or 'desc'}"
 
 				# draft docs always on top
 				if hasattr(self.doctype_meta, "is_submittable") and self.doctype_meta.is_submittable:
 					if self.order_by:
-						args.order_by = f"`tab{self.doctype}`.docstatus asc, {args.order_by}"
+						args.order_by = f"{self.doctype_table}.docstatus asc, {args.order_by}"
 
 	def validate_order_by_and_group_by(self, parameters: str):
 		"""Check order by, group by so that atleast one column is selected and does not have subquery"""
@@ -1362,9 +1322,17 @@ def strip_alias(field: str) -> str:
 
 def fetch_table_name_from_field(field: str) -> str:
 	tokens_inside_fn_call = field.split("(", 1)[-1].split(")", 1)[0].split(",")
+	table_name = ""
+
 	for token in tokens_inside_fn_call:
 		if "." in token:
-			return token.split(".", 1)[0].strip().strip("`")
+			table_name = token.split(".", 1)[0].strip().strip("`")
+			break
+
+	if table_name[0] != "`":
+		table_name = f"`{table_name}`"
+
+	return table_name
 
 
 def get_possible_star_fields(doctype: str) -> Generator[str, None, None]:
@@ -1378,9 +1346,65 @@ def raise_sub_query_or_func_exception():
 	frappe.throw(_("Use of sub-query or function is restricted"), frappe.DataError)
 
 
-def _is_query(field):
-	if IS_QUERY_PATTERN.match(field):
-		raise_sub_query_or_func_exception()
+def get_child_table_field(field: str, doctype_meta: "Meta") -> tuple[str, dict]:
+	alias = None
+	table_data = None
 
-	elif IS_QUERY_PREDICATE_PATTERN.match(field):
-		raise_sub_query_or_func_exception()
+	aliased_clause = re.split(" as ", field, maxsplit=1, flags=re.IGNORECASE)
+	if len(aliased_clause) == 2:
+		field, alias = aliased_clause
+
+	linked_fieldname, fieldname = field.split(".", 1)
+	linked_field = doctype_meta.get_field(linked_fieldname)
+	linked_doctype = linked_field.options
+
+	if linked_field.fieldtype == "Link":
+		table_data = {"data": (linked_doctype, linked_fieldname), "type": Table.LinkTable}
+	elif linked_field.fieldtype == "Table":
+		table_data = {"data": (f"`tab{linked_doctype}`",), "type": Table.ChildTable}
+
+	field = f"`tab{linked_doctype}`.`{fieldname}`"
+	if alias:
+		field = f"{field} as {alias}"
+
+	return field, table_data
+
+
+class Field:
+	def __init__(self, fieldname: str):
+		self.original = fieldname
+		self.stripped = fieldname.strip().lower()
+
+	def validate_sub_query_in_field(self):
+		if SUB_QUERY_PATTERN.match(self.original):
+			if self.stripped[0] == "(":
+				subquery_token = self.stripped[1:].lstrip().split(" ", 1)[0]
+				if subquery_token in BLACKLIST_KEYWORDS:
+					raise_sub_query_or_func_exception()
+
+			function = self.stripped.split("(", 1)[0].rstrip()
+			if function in BLACKLIST_FUNCTIONS:
+				raise_sub_query_or_func_exception()
+
+			# prevent access to global variables
+			if "@" in self.stripped:
+				raise_sub_query_or_func_exception()
+
+		if FIELD_QUOTE_PATTERN.match(self.original):
+			raise_sub_query_or_func_exception()
+
+		if FIELD_COMMA_PATTERN.match(self.original):
+			raise_sub_query_or_func_exception()
+
+		if IS_QUERY_PATTERN.match(self.original):
+			raise_sub_query_or_func_exception()
+
+		elif IS_QUERY_PREDICATE_PATTERN.match(self.original):
+			raise_sub_query_or_func_exception()
+
+	def strict_validate_field(self):
+		if STRICT_FIELD_PATTERN.match(self.original):
+			frappe.throw(_("Illegal SQL Query"))
+
+		if STRICT_UNION_PATTERN.match(self.stripped):
+			frappe.throw(_("Illegal SQL Query"))
