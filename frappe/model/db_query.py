@@ -296,7 +296,7 @@ class DatabaseQuery:
 			# handle child_table.fieldname syntax to `tabChild DocType`.`fieldname`
 			if "tab" not in stripped_field:
 				alias = None
-				aliased_clause = re.split(" as ", field, flags=re.IGNORECASE)
+				aliased_clause = re.split(" as ", field, maxsplit=1, flags=re.IGNORECASE)
 				if len(aliased_clause) == 2:
 					field, alias = aliased_clause
 
@@ -338,9 +338,9 @@ class DatabaseQuery:
 		):
 			return field, table_data
 
-		elif "as" in stripped_field.split(" "):
-			col, _, new = field.split()
-			return f"`{col}` as {new}", table_data
+		elif alias_clause := re.split(" as ", field, maxsplit=1, flags=re.IGNORECASE):
+			if len(alias_clause) == 2:
+				return f"`{alias_clause[0]}` as {alias_clause[1]}", table_data
 
 		return f"`{field}`", table_data
 
@@ -427,7 +427,7 @@ class DatabaseQuery:
 		if order_field not in args.fields:
 			extracted_column = order_column = order_field.replace("`", "")
 			if "." in extracted_column:
-				extracted_column = extracted_column.split(".")[1]
+				extracted_column = extracted_column.split(".", 1)[1]
 
 			args.fields += f", MAX({extracted_column}) as `{order_column}`"
 			args.order_by = args.order_by.replace(order_field, f"`{order_column}`")
@@ -618,10 +618,6 @@ class DatabaseQuery:
 		# prepare in condition
 		if f.operator.lower() in NestedSetHierarchy:
 			values = f.value or ""
-
-			# TODO: handle list and tuple
-			# if not isinstance(values, (list, tuple)):
-			# 	values = values.split(",")
 			field = meta.get_field(f.fieldname)
 			ref_doctype = field.options if field else f.doctype
 			lft, rgt = "", ""
@@ -1067,10 +1063,13 @@ def get_order_by(doctype, meta):
 		# `idx desc, modified desc`
 		# will covert to
 		# `tabItem`.`idx` desc, `tabItem`.`modified` desc
-		order_by = ", ".join(
-			f"`tab{doctype}`.`{f.split()[0].strip()}` {f.split()[1].strip()}"
-			for f in meta.sort_field.split(",")
-		)
+		order_fields = []
+
+		for f in meta.sort_field.split(","):
+			sort_field = (x.strip() for x in f.split())
+			order_fields.append(f"`tab{doctype}`.`{next(sort_field)}` {next(sort_field)}")
+
+		order_by = ", ".join(order_fields)
 
 	else:
 		sort_field = meta.sort_field or "modified"
