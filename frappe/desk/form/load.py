@@ -4,6 +4,8 @@
 import json
 from urllib.parse import quote
 
+from pypika.terms import ValueWrapper
+
 import frappe
 import frappe.defaults
 import frappe.desk.form.meta
@@ -450,7 +452,7 @@ def get_title_values_for_link_and_dynamic_link_fields(doc, link_fields=None):
 			continue
 
 		link_title = frappe.db.get_value(
-			doctype, doc.get(field.fieldname), meta.title_field, cache=True, order_by=None
+			doctype, ValueWrapper(doc.get(field.fieldname)), meta.title_field, cache=True, order_by=None
 		)
 		link_titles.update({doctype + "::" + doc.get(field.fieldname): link_title})
 
