@@ -26,21 +26,24 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		this.$link_open = this.$link.find(".btn-open");
 		this.set_input_attributes();
 		this.$input.on("focus", function () {
-			setTimeout(function () {
-				if (me.$input.val() && me.get_options()) {
-					let doctype = me.get_options();
-					let name = me.get_input_value();
-					me.$link.toggle(true);
-					me.$link_open.attr("href", frappe.utils.get_form_link(doctype, name));
-				}
+			frappe.utils.debounce(
+				function () {
+					if (me.$input.val() && me.get_options()) {
+						let doctype = me.df.options;
+						let name = me.value;
+						me.$link.toggle(true);
+						me.$link_open.attr("href", frappe.utils.get_form_link(doctype, name));
+					}
 
-				if (!me.$input.val()) {
-					me.$input.val("").trigger("input");
+					if (!me.$input.val()) {
+						me.$input.val("").trigger("input");
 
-					// hide link arrow to doctype if none is set
-					me.$link.toggle(false);
-				}
-			}, 500);
+						// hide link arrow to doctype if none is set
+						me.$link.toggle(false);
+					}
+				}.bind(me),
+				100
+			)();
 		});
 		this.$input.on("blur", function () {
 			// if this disappears immediately, the user's click
