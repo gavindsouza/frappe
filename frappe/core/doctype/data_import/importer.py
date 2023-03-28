@@ -265,9 +265,26 @@ class Importer:
 
 	def update_record(self, doc):
 		id_field = get_id_field(self.doctype)
-		existing_doc = frappe.get_doc(self.doctype, doc.get(id_field.fieldname))
+		unique_field = None
 
-		updated_doc = frappe.get_doc(self.doctype, doc.get(id_field.fieldname))
+		# if no id field is set, try to find a unique field
+		if not doc.get(id_field.fieldname):
+			unique_fields = [df for df in frappe.get_meta(self.doctype).fields if df.unique]
+			for field in unique_fields:
+				if doc.get(field.fieldname):
+					unique_field = field
+					break
+
+		if unique_field:
+			existing_doc = frappe.get_doc(
+				self.doctype, {unique_field.fieldname: doc.get(unique_field.fieldname)}
+			)
+			updated_doc = frappe.get_doc(
+				self.doctype, {unique_field.fieldname: doc.get(unique_field.fieldname)}
+			)
+		else:
+			existing_doc = frappe.get_doc(self.doctype, doc.get(id_field.fieldname))
+			updated_doc = frappe.get_doc(self.doctype, doc.get(id_field.fieldname))
 
 		updated_doc.update(doc)
 
