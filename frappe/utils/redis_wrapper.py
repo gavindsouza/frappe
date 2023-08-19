@@ -88,7 +88,7 @@ class RedisWrapper(redis.Redis):
 		else:
 			val = None
 			try:
-				val = self.get(key)
+				val = self.get(original_key)
 			except redis.exceptions.ConnectionError:
 				pass
 
@@ -147,27 +147,6 @@ class RedisWrapper(redis.Redis):
 			self.delete(*keys)
 		except redis.exceptions.ConnectionError:
 			pass
-
-	def lpush(self, key, value):
-		super().lpush(self.make_key(key), value)
-
-	def rpush(self, key, value):
-		super().rpush(self.make_key(key), value)
-
-	def lpop(self, key):
-		return super().lpop(self.make_key(key))
-
-	def rpop(self, key):
-		return super().rpop(self.make_key(key))
-
-	def llen(self, key):
-		return super().llen(self.make_key(key))
-
-	def lrange(self, key, start, stop):
-		return super().lrange(self.make_key(key), start, stop)
-
-	def ltrim(self, key, start, stop):
-		return super().ltrim(self.make_key(key), start, stop)
 
 	def hset(
 		self,
@@ -261,29 +240,57 @@ class RedisWrapper(redis.Redis):
 		except redis.exceptions.ConnectionError:
 			return []
 
-	def sadd(self, name, *values):
-		"""Add a member/members to a given set"""
-		super().sadd(self.make_key(name), *values)
-
-	def srem(self, name, *values):
-		"""Remove a specific member/list of members from the set"""
-		super().srem(self.make_key(name), *values)
-
-	def sismember(self, name, value):
-		"""Returns True or False based on if a given value is present in the set"""
-		return super().sismember(self.make_key(name), value)
-
-	def spop(self, name):
-		"""Removes and returns a random member from the set"""
-		return super().spop(self.make_key(name))
-
-	def srandmember(self, name, count=None):
-		"""Returns a random member from the set"""
-		return super().srandmember(self.make_key(name))
-
-	def smembers(self, name):
-		"""Return all members of the set"""
-		return super().smembers(self.make_key(name))
-
 	def ft(self, index_name="idx"):
 		return RedisearchWrapper(client=self, index_name=self.make_key(index_name))
+
+
+import functools
+import inspect
+import types
+
+
+def wrapper(make_key, func):
+	def inner(*args, **kwargs):
+		args = list(args)
+		args[0] = make_key(args[0])
+		print(f"{func.__name__} called with {args} and {kwargs}")
+		result = func(*args, **kwargs)
+		return result
+
+	return inner
+
+
+class FrappeRedisWrapper(RedisWrapper):  # works only for new-style classes
+	def __getattribute__(self, name: str):
+		attr = super().__getattribute__(name)
+		if (
+			attr
+			and name
+			and name not in {"make_key", "get", "set"}
+			and not name.startswith("_")
+			and isinstance(attr, types.MethodType)
+			and (get_class_that_defined_method(attr) not in {redis.client.Redis, RedisWrapper})
+		):
+			attr = wrapper(self.make_key, attr)
+		return attr
+
+
+def get_class_that_defined_method(meth):
+	if isinstance(meth, functools.partial):
+		return get_class_that_defined_method(meth.func)
+	if inspect.ismethod(meth) or (
+		inspect.isbuiltin(meth)
+		and getattr(meth, "__self__", None) is not None
+		and getattr(meth.__self__, "__class__", None)
+	):
+		for cls in inspect.getmro(meth.__self__.__class__):
+			if meth.__name__ in cls.__dict__:
+				return cls
+		meth = getattr(meth, "__func__", meth)  # fallback to __qualname__ parsing
+	if inspect.isfunction(meth):
+		cls = getattr(
+			inspect.getmodule(meth), meth.__qualname__.split(".<locals>", 1)[0].rsplit(".", 1)[0], None
+		)
+		if isinstance(cls, type):
+			return cls
+	return getattr(meth, "__objclass__", None)  # handle special descriptor objects

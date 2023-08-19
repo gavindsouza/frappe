@@ -386,9 +386,9 @@ def setup_redis_cache_connection():
 	global cache
 
 	if not cache:
-		from frappe.utils.redis_wrapper import RedisWrapper
+		from frappe.utils.redis_wrapper import FrappeRedisWrapper, RedisWrapper
 
-		cache = RedisWrapper.from_url(conf.get("redis_cache"))
+		cache = FrappeRedisWrapper.from_url(conf.get("redis_cache"))
 
 
 def get_traceback(with_context: bool = False) -> str:
