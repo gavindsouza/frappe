@@ -465,9 +465,12 @@ class BaseDocument:
 					del doc[key]
 
 		if no_child_table_fields:
-			for key in child_table_fields:
-				if key in doc:
-					del doc[key]
+			for child_field in self.meta.get_table_fields():
+				if child_field.fieldname in doc:
+					for parent_field in child_table_fields:
+						for row in doc[child_field.fieldname]:
+							if parent_field in row:
+								del row[parent_field]
 
 		for key in (
 			"_user_tags",
