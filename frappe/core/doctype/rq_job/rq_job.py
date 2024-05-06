@@ -79,19 +79,39 @@ class RQJob(Document):
 	def get_list(args):
 		start = cint(args.get("start")) or 0
 		page_length = cint(args.get("page_length")) or 20
+		as_list = cint(args.get("as_list") or 0)
+		fields = args.get("fields")
 
-		order_desc = "desc" in args.get("order_by", "")
+		if order_by := args.get("order_by"):
+			*_, sort_key, sort_order = order_by.rsplit(" ", maxsplit=1)
+			sort_key = sort_key.removeprefix("`tabRQ Job`.").strip("`")
+			order_desc = "desc" in sort_order.lower()
+		else:
+			sort_key = "modified"
+			order_desc = True
 
-		matched_job_ids = RQJob.get_matching_job_ids(args)[start : start + page_length]
+		matched_job_ids = RQJob.get_matching_job_ids(args)
 
 		conn = get_redis_conn()
 		jobs = [serialize_job(job) for job in Job.fetch_many(job_ids=matched_job_ids, connection=conn) if job]
+		sorted_jobs = sorted(jobs, key=lambda j: j[sort_key], reverse=order_desc)[start : start + page_length]
 
-		return sorted(jobs, key=lambda j: j.modified, reverse=order_desc)
+		# Dont remove fields if as_list is True
+		if fields and as_list:
+			fields = tuple(f.removeprefix("`RQ Job`.").strip("`") for f in fields)
+			for job_dict in sorted_jobs:
+				for key in list(job_dict):
+					if key not in fields + frappe.model.default_fields:
+						job_dict.pop(key)
+
+		if as_list:
+			return list(list(j.values()) for j in sorted_jobs)
+
+		return sorted_jobs
 
 	@staticmethod
 	def get_matching_job_ids(args) -> list[str]:
-		filters = make_filter_dict(args.get("filters"))
+		filters = make_filter_dict(args.get("filters", {}))
 
 		queues = _eval_filters(filters.get("queue"), QUEUES)
 		statuses = _eval_filters(filters.get("status"), JOB_STATUSES)
@@ -108,6 +128,10 @@ class RQJob(Document):
 	@check_permissions
 	def delete(self):
 		self.job.delete()
+
+	@check_permissions
+	def requeue(self):
+		self.job.requeue()
 
 	@check_permissions
 	def stop_job(self):
@@ -153,9 +177,9 @@ def serialize_job(job: Job) -> frappe._dict:
 		queue=job.origin.rsplit(":", 1)[1],
 		job_name=job_name,
 		status=job.get_status(),
-		started_at=convert_utc_to_system_timezone(job.started_at) if job.started_at else "",
-		ended_at=convert_utc_to_system_timezone(job.ended_at) if job.ended_at else "",
-		time_taken=(job.ended_at - job.started_at).total_seconds() if job.ended_at else "",
+		started_at=convert_utc_to_system_timezone(job.started_at) if job.started_at else -1,
+		ended_at=convert_utc_to_system_timezone(job.ended_at) if job.ended_at else -1,
+		time_taken=(job.ended_at - job.started_at).total_seconds() if job.ended_at else -1,
 		exc_info=job.exc_info,
 		arguments=frappe.as_json(job.kwargs),
 		timeout=job.timeout,
@@ -228,3 +252,8 @@ def get_all_queued_jobs():
 @frappe.whitelist()
 def stop_job(job_id):
 	frappe.get_doc("RQ Job", job_id).stop_job()
+
+
+@frappe.whitelist()
+def requeue_job(job_id):
+	frappe.get_doc("RQ Job", job_id).requeue()
