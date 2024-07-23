@@ -4,7 +4,7 @@ import datetime
 import json
 import weakref
 from functools import cached_property
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 import frappe
 from frappe import _, _dict
@@ -15,6 +15,7 @@ from frappe.model import (
 	display_fieldtypes,
 	float_like_fields,
 	get_permitted_fields,
+	no_value_fields,
 	table_fields,
 )
 from frappe.model.docstatus import DocStatus
@@ -36,6 +37,7 @@ from frappe.utils.defaults import get_not_null_defaults
 from frappe.utils.html_utils import unescape_html
 
 if TYPE_CHECKING:
+	from frappe.core.doctype.docfield.docfield import DocField
 	from frappe.model.document import Document
 
 D = TypeVar("D", bound="Document")
@@ -349,76 +351,102 @@ class BaseDocument:
 
 		return self.meta.get_table_fields()
 
+	def standardize_field_value(
+		self, value, *, docfield: Optional["DocField"] = None, sanitize=True, convert_dates_to_str=False
+	):
+		# if no need for sanitization and value is None, continue
+		if not sanitize and value is None:
+			return None
+
+		if docfield:
+			if docfield.is_virtual:
+				if docfield.fieldname not in self.permitted_fieldnames:
+					return None
+
+				if (prop := getattr(type(self), docfield.fieldname, None)) and is_a_property(prop):
+					value = getattr(self, docfield.fieldname)
+
+				elif options := getattr(docfield, "options", None):
+					from frappe.utils.safe_exec import get_safe_globals
+
+					value = frappe.safe_eval(
+						code=options,
+						eval_globals=get_safe_globals(),
+						eval_locals={"doc": self},
+					)
+
+			if isinstance(value, list) and docfield.fieldtype not in table_fields:
+				frappe.throw(
+					_("Value for {0} cannot be a list").format(_(docfield.label, context=docfield.parent))
+				)
+
+			if docfield.fieldtype == "Check":
+				value = 1 if cint(value) else 0
+
+			elif docfield.fieldtype == "Int" and not isinstance(value, int):
+				value = cint(value)
+
+			elif docfield.fieldtype in float_like_fields and not isinstance(value, float):
+				value = flt(value)
+
+			elif (docfield.fieldtype in datetime_fields and value == "") or (
+				docfield.unique and cstr(value).strip() == ""
+			):
+				value = None
+
+			elif docfield.fieldtype == "JSON" and isinstance(value, dict):
+				value = json.dumps(value, separators=(",", ":"))
+
+		if convert_dates_to_str and isinstance(
+			value, datetime.datetime | datetime.date | datetime.time | datetime.timedelta
+		):
+			value = str(value)
+
+		return value
+
 	def get_valid_dict(
 		self, sanitize=True, convert_dates_to_str=False, ignore_nulls=False, ignore_virtual=False
 	) -> _dict:
 		d = _dict()
 		field_values = self.__dict__
 
-		for fieldname in self.meta.get_valid_columns():
-			value = field_values.get(fieldname)
-
-			# if no need for sanitization and value is None, continue
-			if not sanitize and value is None:
-				d[fieldname] = None
+		for field in default_fields:
+			try:
+				value = field_values[field]
+			except KeyError:
 				continue
 
-			df = self.meta.get_field(fieldname)
-			is_virtual_field = getattr(df, "is_virtual", False)
+			value = self.standardize_field_value(
+				value, sanitize=sanitize, convert_dates_to_str=convert_dates_to_str
+			)
+			if value is None and ignore_nulls:
+				continue
+			d[field] = value
 
-			if df:
-				if is_virtual_field:
-					if ignore_virtual or fieldname not in self.permitted_fieldnames:
-						continue
-
-					if (prop := getattr(type(self), fieldname, None)) and is_a_property(prop):
-						value = getattr(self, fieldname)
-
-					elif options := getattr(df, "options", None):
-						from frappe.utils.safe_exec import get_safe_globals
-
-						value = frappe.safe_eval(
-							code=options,
-							eval_globals=get_safe_globals(),
-							eval_locals={"doc": self},
-						)
-
-				if isinstance(value, list) and df.fieldtype not in table_fields:
-					frappe.throw(_("Value for {0} cannot be a list").format(_(df.label, context=df.parent)))
-
-				if df.fieldtype == "Check":
-					value = 1 if cint(value) else 0
-
-				elif df.fieldtype == "Int" and not isinstance(value, int):
-					value = cint(value)
-
-				elif df.fieldtype == "JSON" and isinstance(value, dict):
-					value = json.dumps(value, separators=(",", ":"))
-
-				elif df.fieldtype in float_like_fields and not isinstance(value, float):
-					value = flt(value)
-
-				elif (df.fieldtype in datetime_fields and value == "") or (
-					getattr(df, "unique", False) and cstr(value).strip() == ""
-				):
-					value = None
-
-			if convert_dates_to_str and isinstance(
-				value, datetime.datetime | datetime.date | datetime.time | datetime.timedelta
-			):
-				value = str(value)
-
-			if ignore_nulls and not is_virtual_field and value is None:
+		for df in self.meta.fields:
+			if ignore_virtual and df.is_virtual:
 				continue
 
-			# If the docfield is not nullable - set a default non-null value
-			if value is None and getattr(df, "not_nullable", False):
-				if df.default:
-					value = df.default
-				else:
-					value = get_not_null_defaults(df.fieldtype)
+			if df.fieldtype in no_value_fields or df.fieldtype not in self.permitted_fieldnames:
+				continue
 
-			d[fieldname] = value
+			try:
+				value = field_values[df.fieldname]
+			except KeyError:
+				continue
+
+			value = self.standardize_field_value(
+				value, docfield=df, sanitize=sanitize, convert_dates_to_str=convert_dates_to_str
+			)
+
+			if value is None:
+				if not df.is_virtual and ignore_nulls:
+					continue
+
+				if df.not_nullable:
+					value = df.default or get_not_null_defaults(df.fieldtype)
+
+			d[df.fieldname] = value
 
 		return d
 

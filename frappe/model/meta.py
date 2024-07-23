@@ -41,6 +41,9 @@ from frappe.model.workflow import get_workflow_name
 from frappe.modules import load_doctype_module
 from frappe.utils import cast, cint, cstr
 
+if typing.TYPE_CHECKING:
+	from frappe.core.doctype.docfield.docfield import DocField
+
 DEFAULT_FIELD_LABELS = {
 	"name": _lt("ID"),
 	"creation": _lt("Created On"),
@@ -531,7 +534,13 @@ class Meta(Document):
 			if custom_perms:
 				self.permissions = [Document(d) for d in custom_perms]
 
-	def get_fieldnames_with_value(self, with_field_meta=False, with_virtual_fields=False):
+	@typing.overload
+	def get_fieldnames_with_value(
+		self, with_field_meta: bool = True, with_virtual_fields: bool = bool
+	) -> list["DocField"]:
+		...
+
+	def get_fieldnames_with_value(self, with_field_meta=False, with_virtual_fields=False) -> list[str]:
 		def is_value_field(docfield):
 			return not (
 				not with_virtual_fields
